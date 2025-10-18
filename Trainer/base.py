@@ -19,6 +19,9 @@ This module contains bases class for Trainer for 2D and 3D scattering problem.
 
 
 class LossPINN(ABC):
+    """
+    Implement the losses used for any training regarding scattering problem solving
+    """
     def __init__(self, model, dataloader, loss_fn, config):
         super().__init__()
         self.model = model
@@ -190,9 +193,9 @@ class BaseTrainer2D(LossPINN):
         Parameters:
         -----------
         model : torch.nn.Module
-            Neural network model (e.g., PINN for acoustic scattering)
+            Neural network model (PINN for acoustic scattering)
         dataloader : torch.utils.data.DataLoader
-            Data loader providing training batches
+            Dataloader providing training batches
         loss_fn : callable
             Loss function for training optimization
         config : dict
@@ -275,6 +278,23 @@ class BaseTrainer2D(LossPINN):
 
 class BaseTrainer3D(LossPINN):
     def __init__(self, model, dataloader, loss_fn, config):
+        """
+        Initialize 3D trainer with model and training configuration
+        
+        Parameters:
+        -----------
+        model : torch.nn.Module
+            Neural network model (PINN for acoustic scattering)
+        dataloader : torch.utils.data.DataLoader
+            Dataloader providing training batches
+        loss_fn : callable
+            Loss function for training optimization
+        config : dict
+            Configuration dictionary containing training hyperparameters:
+            - 'model': str, model name for logging and checkpointing
+            - 'preload': bool, whether to load pre-trained weights
+            - other training-specific parameters
+        """
         super().__init__(model, dataloader, loss_fn, config)
         self.init_solution()
 
@@ -300,8 +320,6 @@ class BaseTrainer3D(LossPINN):
             self.eval_grid = torch.tensor(self.eval_grid, device = self.device, dtype = DTYPE)
             self.solution = np.load('bem_results/scattered_field_realimag.npy')
             self.solution = torch.tensor(self.solution, device = self.device, dtype = DTYPE)
-        #self.reshape_solution = self.solution.cpu().numpy().reshape(self.res, self.res, self.res, 2)
-
         self.solution = self.solution.cpu().numpy()
     
     @abstractmethod

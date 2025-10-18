@@ -1,12 +1,10 @@
-import torch
 from torch import nn
-import numpy as np
-import math
 
-'''
+
+"""
 This module introduce a general class that inherit every neding parameter 
 for each model.
-'''
+"""
 
 
 class PINN(nn.Module):

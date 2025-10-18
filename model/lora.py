@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim import LBFGS, Adam
+from torch.optim import LBFGS
 import numpy as np
 from typing import Union, List, Optional, Dict, Any
 import copy
 
-'''
+"""
 This module implement LoRA adaptation related function for a reference PINN.
-'''
+"""
 
 class LoRALinear(nn.Module):
     """

@@ -4,9 +4,9 @@ import torch.nn.functional as F
 import numpy as np
 from .activation import *
 
-'''
+"""
 This module implements the differents components of PHISK
-'''
+"""
 
     
 class DirectionInterpolationModule(nn.Module):

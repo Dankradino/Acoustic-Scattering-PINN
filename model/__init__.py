@@ -13,7 +13,7 @@ _all__ = ["rff", "siren", "mag_phase", "rff_polar", "re_im"]
 
 
 def init_model_from_conf(conf):
-    '''
+    """
     Init a model from a configuration conf.
     The model is defined by the argument 'model'.
     siren -> SIREN network with real/imaginary part representation of the ouput pressure as in Implicit Neural Representations with Periodic Activation Functions Sitzmann 2020.
@@ -23,7 +23,7 @@ def init_model_from_conf(conf):
     rff_polar -> Random Fourier Features based PINN with magnitude/phase representation.
     Note : You can modify RFF activation function by adding the argument (activation = your_activation)
     when calling a model. Baseline activation is QuadraticTanh as suggested in the article.
-    '''
+    """
     model_type = conf['model']
     if model_type == 'siren':
         return SirenPINN(conf)
@@ -39,10 +39,10 @@ def init_model_from_conf(conf):
     
 
 def init_conditioned_model(conf):
-    '''
+    """
     Similar as init_model_from_conf with 2 input : coordinate and direction.
     Only real/imaginary part representation of output pressure are considered but can add more.
-    '''
+    """
     model_type = conf['model']
     if model_type == 'siren':
         return SirenConditioned(conf)

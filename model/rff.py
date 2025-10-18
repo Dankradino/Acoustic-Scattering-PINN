@@ -4,13 +4,15 @@ import numpy as np
 from .base import PINN
 from .activation import QuadraticTanh
 
-'''
+"""
 Implements the Random Fourier Features related PINN
-'''
+"""
 
 
 class PINN_RFF(PINN):
-    """Physics-Informed Neural Network with Random Weight Factorization layers"""
+    """
+    Physics-Informed Neural Network with Random Weight Factorization layers
+    """
     
     def __init__(self, config, activation = QuadraticTanh(alpha = 1.)):
         super(PINN_RFF, self).__init__(config)
@@ -224,10 +226,10 @@ class RBFPinn(PINN):
 
 
 class RBF(nn.Module):
-    '''
+    """
     Implements different features embedding than random fourier features using
     radial basis function.
-    '''
+    """
     def __init__(self, num_features, features_mapping_name, input_dim):
         super(RBF, self).__init__()
         self.eps = 1e-12

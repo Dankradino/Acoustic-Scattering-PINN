@@ -15,6 +15,23 @@ from .base import BaseTrainer3D
 
 class HRTFTrainer(BaseTrainer3D):
     def __init__(self, model, dataloader, loss_fn, config, sofa):
+        """
+        Initialize a trainer with model and training configuration specialized for HRTF estimation.
+        
+        Parameters:
+        -----------
+        model : torch.nn.Module
+            Neural network model (e.g., PINN for acoustic scattering)
+        dataloader : torch.utils.data.DataLoader
+            Data loader providing training batches
+        loss_fn : callable
+            Loss function for training optimization
+        config : dict
+            Configuration dictionary containing training hyperparameters:
+            - 'model': str, model name for logging and checkpointing
+            - 'preload': bool, whether to load pre-trained weights
+            - other training-specific parameters
+        """
         config['hrtf'] = True
         config['custom_shape'] = True
         super().__init__(model, dataloader, loss_fn, config)

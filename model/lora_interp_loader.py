@@ -8,10 +8,11 @@ import os
 import glob
 from collections import OrderedDict
 import re
-'''
+
+"""
 This modules is only here to test the efficiency of LoRA interpolation 
 without any corrective hypernetwork
-'''
+"""
 
 from model.phisk_module import DirectionInterpolationModule
 class LoRAForward:

@@ -3,9 +3,9 @@ from torch import nn
 import numpy as np
 
 
-'''
+"""
 This module introduces the activation function used for our scattering PINN
-'''
+"""
 
 
 class QuadraticTanh(torch.nn.Module):

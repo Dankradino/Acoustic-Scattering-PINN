@@ -15,6 +15,26 @@ from .base import BaseTrainer2D
 
 class ConditionedTrainer2D(BaseTrainer2D):
     def __init__(self, model, dataloader, loss_fn, config):
+        """
+        Initialize 2D trainer with model and training configuration.
+        This trainer is specialized for the conditioned PINN using two input :
+            -coordinate
+            -direction
+        
+        Parameters:
+        -----------
+        model : torch.nn.Module
+            Neural network model (e.g., PINN for acoustic scattering)
+        dataloader : torch.utils.data.DataLoader
+            Data loader providing training batches
+        loss_fn : callable
+            Loss function for training optimization
+        config : dict
+            Configuration dictionary containing training hyperparameters:
+            - 'model': str, model name for logging and checkpointing
+            - 'preload': bool, whether to load pre-trained weights
+            - other training-specific parameters
+        """
         super().__init__(model, dataloader, loss_fn, config)
         self.init_solution()
 

@@ -1,16 +1,15 @@
 import torch
 from torch import nn
-import numpy as np
 from .activation import *
 from Trainer.phisk2D import PHISK_Trainer2D
 
-'''
+"""
 This module implements a loader for PHISK 
-'''
+"""
 
 
 
-class DirectionalHyperNetwork(torch.nn.Module):
+class DirectionalHyperNetwork(nn.Module):
     """
     Simple wrapper that makes the hypernetwork callable like model(points, direction)
     """
@@ -22,7 +21,7 @@ class DirectionalHyperNetwork(torch.nn.Module):
             base_network=base_network,
             hypernetwork_path=checkpoint_path,
             dataloader={},  # Empty for inference
-            loss_fn=torch.nn.MSELoss(),  # Dummy loss
+            loss_fn=nn.MSELoss(),  # Dummy loss
             config=config,
             hconfig=hconfig
         )

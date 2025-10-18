@@ -4,9 +4,9 @@ import numpy as np
 from .base import PINN
 from .activation import SineActivation
 
-'''
+"""
 This module implements SIREN related architectures for scattering PINN.
-'''
+"""
 
 
 class SineLayer(nn.Module):
@@ -45,9 +45,9 @@ class SineLayer(nn.Module):
 
 
 class Siren(nn.Module):
-    '''
+    """
     Siren network with SineLayer as primary component.
-    '''
+    """
     def __init__(self, in_features, hidden_features, hidden_layers, out_features, outermost_linear=True, 
                  first_omega_0=30, hidden_omega_0=30.):
         super().__init__()
@@ -126,7 +126,7 @@ class Siren_integrated(nn.Module):
 
 
 class SirenPINN(PINN):
-    ''' PINN using SIREN as main network.'''
+    """ PINN using SIREN as main network."""
     def __init__(self, config):
         super(SirenPINN, self).__init__(config)
         self.net = Siren(self.input_dim, self.hidden_dim, self.num_layers, self.output_dim, first_omega_0=self.first_omega_0, hidden_omega_0 = self.hidden_omega_0)
@@ -175,9 +175,9 @@ class SirenMagPhase(PINN):
     
 
 class SirenConditioned(PINN):
-    '''
+    """
     SIREN using two input : coordinate and direction, used for PHISK comparison.
-    '''
+    """
     def __init__(self, config):
         super(SirenConditioned, self).__init__(config)
         self.input_dim = self.input_dim * 2
