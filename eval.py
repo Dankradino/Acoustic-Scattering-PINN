@@ -4,10 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import generate_grid, green
 from Trainer.utils import compl_mul, compl_div
-from scipy.special import hankel1,jv 
+from scipy.special import hankel1,jv, spherical_jn, spherical_yn, sph_harm
 from scipy.spatial.distance import cdist
 from mpl_toolkits.mplot3d import Axes3D
 import trimesh
+
 
 '''
 This modules introduces every component for evaluation of the model.
@@ -533,6 +534,299 @@ def evaluate_sphere_estimation(model, trainer, config, R, display = False):
 
 
 
+class AcousticScattering3D:
+    def __init__(self, ka_max=20, n_terms=50, incident_direction=None, sphere_radius=1.0, device='cpu'):
+        """
+        Acoustic scattering by a sound-hard sphere with PyTorch grid support
+        
+        Parameters:
+        ka_max: maximum size parameter for calculations
+        n_terms: number of terms in the series expansion
+        incident_direction: incident wave direction as (x,y,z) vector
+        sphere_radius: radius of the scattering sphere
+        device: PyTorch device ('cpu' or 'cuda')
+        """
+        self.ka_max = ka_max
+        self.n_terms = n_terms
+        self.sphere_radius = sphere_radius
+        self.device = device
+        
+        # Set incident direction
+        if incident_direction is None:
+            self.incident_direction = np.array([0, 0, 1])  # Default: +z direction
+        else:
+            self.incident_direction = np.array(incident_direction).T[0]
+            self.incident_direction = self.incident_direction / np.linalg.norm(self.incident_direction)
+        
+        # Convert to spherical coordinates
+        self.incident_theta = np.arccos(np.clip(self.incident_direction[2], -1, 1))
+        self.incident_phi = np.arctan2(self.incident_direction[1], self.incident_direction[0])
+        
+        print(f"Incident direction: {self.incident_direction}")
+        #print(f"Incident theta: {self.incident_theta:.3f}, phi: {self.incident_phi:.3f}")
+    
+    def spherical_hankel1(self, n, x):
+        """Spherical Hankel function of first kind"""
+        return spherical_jn(n, x) + 1j * spherical_yn(n, x)
+    
+    def spherical_jn_derivative(self, n, x):
+        """Derivative of spherical Bessel function j_n(x)"""
+        if n == 0:
+            return -spherical_jn(1, x)
+        else:
+            return spherical_jn(n-1, x) - (n+1)/x * spherical_jn(n, x)
+    
+    def spherical_hankel1_derivative(self, n, x):
+        """Derivative of spherical Hankel function h_n^(1)(x)"""
+        if n == 0:
+            return -self.spherical_hankel1(1, x)
+        else:
+            return self.spherical_hankel1(n-1, x) - (n+1)/x * self.spherical_hankel1(n, x)
+    
+    def scattering_coefficients(self, ka):
+        """Calculate scattering coefficients A_n for Neumann boundary condition"""
+        A_n = np.zeros(self.n_terms, dtype=complex)
+        
+        for n in range(self.n_terms):
+            jn_prime = self.spherical_jn_derivative(n, ka)
+            hn_prime = self.spherical_hankel1_derivative(n, ka)
+            
+            if abs(hn_prime) > 1e-15:
+                A_n[n] = -jn_prime / hn_prime
+            else:
+                A_n[n] = 0
+        
+        return A_n
+    
+    def incident_field_pytorch(self, grid, k, amplitude=1.0):
+        """
+        Calculate incident plane wave field on PyTorch grid
+        
+        Parameters:
+        grid: PyTorch tensor of shape (N, 3) with coordinates
+        k: wave number
+        amplitude: incident wave amplitude
+        
+        Returns:
+        U_inc: PyTorch tensor of shape (N,) with incident field values
+        """
+        # Convert to numpy for calculation, then back to torch
+        grid_np = grid.cpu().numpy()
+        if isinstance(k, torch.Tensor):
+            k = k.detach().cpu().numpy()
+        # Calculate k·r for each grid point
+        k_dot_r = (k * self.incident_direction[0] * grid_np[:, 0] + 
+                   k * self.incident_direction[1] * grid_np[:, 1] + 
+                   k * self.incident_direction[2] * grid_np[:, 2])
+        
+        # Incident field
+        U_inc = amplitude * np.exp(1j * k_dot_r)
+        
+        # Convert back to torch
+        U_inc_torch = torch.from_numpy(U_inc).to(self.device)
+        
+        return U_inc_torch
+    
+    def scattered_field_pytorch(self, grid, ka, amplitude=1.0):
+        """
+        Calculate scattered field on PyTorch grid using spherical harmonics expansion
+        
+        Parameters:
+            grid: PyTorch tensor of shape (N, 3) with coordinates
+            ka: size parameter
+            amplitude: incident wave amplitude
+            
+        Returns:
+        U_scat: PyTorch tensor of shape (N,) with scattered field values
+        """
+        k = ka / self.sphere_radius
+        if isinstance(k, torch.Tensor):
+            ka = ka.detach().cpu().numpy()
+            k = k.detach().cpu().numpy()
+        A_n = self.scattering_coefficients(ka)
+        
+        # Convert to numpy for calculation
+        grid_np = grid.cpu().numpy()
+        
+        # Convert to spherical coordinates
+        x, y, z = grid_np[:, 0], grid_np[:, 1], grid_np[:, 2]
+        r = np.sqrt(x**2 + y**2 + z**2)
+        theta = np.arccos(np.clip(z / (r + 1e-15), -1, 1))  # Avoid division by zero
+        phi = np.arctan2(y, x)
+        
+        # Initialize scattered field
+        U_scat = np.zeros(len(grid_np), dtype=complex)
+        
+        # Calculate scattered field using spherical harmonics expansion
+        for n in range(self.n_terms):
+            if abs(A_n[n]) > 1e-15:  # Only calculate non-zero terms
+                # Sum over all m from -n to n
+                for m in range(-n, n+1):
+                    # For points outside sphere
+                    outside_mask = r > self.sphere_radius
+                    
+                    if np.any(outside_mask):
+                        # Spherical Hankel function
+                        h_n = self.spherical_hankel1(n, k * r[outside_mask])
+                        
+                        # Spherical harmonic at observation points
+                        Y_nm = sph_harm(m, n, phi[outside_mask], theta[outside_mask])
+                        
+                        # Incident field expansion coefficient
+                        # For plane wave: exp(ik·r) = 4π * Σ i^n * j_n(kr) * Y_n^m*(k̂) * Y_n^m(r̂)
+                        # We need Y_n^m*(incident direction)
+                        Y_nm_inc_conj = np.conj(sph_harm(m, n, self.incident_phi, self.incident_theta))
+                        
+                        # Coefficient for plane wave expansion
+                        coeff = 4 * np.pi * (1j)**n * Y_nm_inc_conj
+                        
+                        # Add contribution from this (n,m) term
+                        U_scat[outside_mask] += amplitude * A_n[n] * coeff * h_n * Y_nm
+        
+        # Convert back to torch
+        U_scat_torch = torch.from_numpy(U_scat).to(self.device)
+        
+        return U_scat_torch
+    
+    def total_field_pytorch(self, L, res, ka, amplitude=1.0):
+        """
+        Calculate total acoustic field U = U_inc + U_scat on your PyTorch grid
+        
+        Parameters:
+        L: half domain size (grid goes from -L to L)
+        res: resolution (number of points per dimension)
+        ka: size parameter
+        amplitude: incident wave amplitude
+        
+        Returns:
+        U: PyTorch tensor of shape (res^3,) with total field values
+        grid: PyTorch tensor of shape (res^3, 3) with coordinates
+        """
+        # Generate grid using your function (assuming it exists)
+        print(f"Generating 3D grid: L={L}, res={res}")
+        # For demonstration, create a simple grid
+        grid = generate_grid(L, res, 3)
+        
+        print(f"Grid shape: {grid.shape}")
+        print(f"Grid range: x∈[{grid[:, 0].min():.2f}, {grid[:, 0].max():.2f}]")
+        
+        k = ka / self.sphere_radius
+        
+        # Calculate incident field
+        print("Calculating incident field...")
+        U_inc = self.incident_field_pytorch(grid, k, amplitude)
+        
+        # Calculate scattered field
+        print("Calculating scattered field...")
+        U_scat = self.scattered_field_pytorch(grid, ka, amplitude)
+        
+        # Total field
+        U =  U_scat #+ U_inc
+        
+        # Set field to zero inside sphere (rigid boundary)
+        grid_np = grid.cpu().numpy()
+        r = np.sqrt(np.sum(grid_np**2, axis=1))
+        inside_mask = r <= self.sphere_radius
+        
+        # Convert mask to torch and apply
+        inside_mask_torch = torch.from_numpy(inside_mask).to(self.device)
+        U[inside_mask_torch] = 0
+        
+        print(f"Field calculated! Shape: {U.shape}")
+        print(f"Field range: {torch.abs(U).min():.3f} to {torch.abs(U).max():.3f}")
+        
+        return U, grid
+    
+    def reshape_to_3d(self, U_flat, res):
+        """
+        Reshape flattened field to 3D array for visualization
+        
+        Parameters:
+        U_flat: flattened field array of shape (res^3,)
+        res: resolution
+        
+        Returns:
+        U_3d: 3D array of shape (res, res, res)
+        """
+        if isinstance(U_flat, torch.Tensor):
+            U_flat = U_flat.cpu().numpy()
+        
+        return U_flat.reshape(res, res, res)
+    
+    def plot_field_slices_pytorch(self, U, grid, res, ka, L):
+        """Plot field on 2D slices through 3D domain"""
+        # Reshape to 3D for slicing
+        U_3d = self.reshape_to_3d(U, res)
+        
+        # Create coordinate arrays
+        line = np.linspace(-L, L, res)
+        
+        fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+        
+        # Get middle indices
+        mid = res // 2
+        
+        # Add circle to show sphere boundary
+        circle = plt.Circle((0, 0), self.sphere_radius, fill=False, color='white', linewidth=2)
+        
+        # XY plane (z = 0)
+        im1 = axes[0,0].imshow(np.real(U_3d[:, :, mid]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='RdBu_r')
+        axes[0,0].set_title('Re(U) - XY plane (z=0)')
+        axes[0,0].set_xlabel('x/a')
+        axes[0,0].set_ylabel('y/a')
+        axes[0,0].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='white', linewidth=2))
+        plt.colorbar(im1, ax=axes[0,0])
+        
+        # XZ plane (y = 0)
+        im2 = axes[0,1].imshow(np.real(U_3d[:, mid, :]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='RdBu_r')
+        axes[0,1].set_title('Re(U) - XZ plane (y=0)')
+        axes[0,1].set_xlabel('x/a')
+        axes[0,1].set_ylabel('z/a')
+        axes[0,1].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='white', linewidth=2))
+        plt.colorbar(im2, ax=axes[0,1])
+        
+        # YZ plane (x = 0)
+        im3 = axes[0,2].imshow(np.real(U_3d[mid, :, :]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='RdBu_r')
+        axes[0,2].set_title('Re(U) - YZ plane (x=0)')
+        axes[0,2].set_xlabel('y/a')
+        axes[0,2].set_ylabel('z/a')
+        axes[0,2].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='white', linewidth=2))
+        plt.colorbar(im3, ax=axes[0,2])
+        
+        # Magnitude plots
+        im4 = axes[1,0].imshow(np.abs(U_3d[:, :, mid]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='plasma')
+        axes[1,0].set_title('|U| - XY plane (z=0)')
+        axes[1,0].set_xlabel('x/a')
+        axes[1,0].set_ylabel('y/a')
+        axes[1,0].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='black', linewidth=2))
+        plt.colorbar(im4, ax=axes[1,0])
+        
+        im5 = axes[1,1].imshow(np.abs(U_3d[:, mid, :]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='plasma')
+        axes[1,1].set_title('|U| - XZ plane (y=0)')
+        axes[1,1].set_xlabel('x/a')
+        axes[1,1].set_ylabel('z/a')
+        axes[1,1].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='black', linewidth=2))
+        plt.colorbar(im5, ax=axes[1,1])
+        
+        im6 = axes[1,2].imshow(np.abs(U_3d[mid, :, :]).T, 
+                               extent=[-L, L, -L, L], origin='lower', cmap='plasma')
+        axes[1,2].set_title('|U| - YZ plane (x=0)')
+        axes[1,2].set_xlabel('y/a')
+        axes[1,2].set_ylabel('z/a')
+        axes[1,2].add_patch(plt.Circle((0, 0), self.sphere_radius, fill=False, color='black', linewidth=2))
+        plt.colorbar(im6, ax=axes[1,2])
+        
+        plt.tight_layout()
+        plt.suptitle(f'Acoustic Field Distribution (ka={ka}, incident: {self.incident_direction})', y=1.02)
+        plt.show()
+
+
+
 def evaluate_custom_estimation(model, trainer):
     '''
     For 3D Custom shape evaluation if solution on trainer.x_grid is given by trainer.solution
@@ -736,10 +1030,7 @@ class BoundaryIntegralSolver:
         x_source = config['source']
         r = torch.linalg.norm(x - x_source, dim = 1)   #(N,)
         r = r / config['scale']
-        #r = torch.matmul(x, direction).squeeze(1)  # (N,)
-        #print(r.shape)
         g = torch.exp(1j * self.k * r)/(4 * np.pi * r) # (N,) complex
-        #print(g.shape)
         return torch.stack((g.real, g.imag), dim=-1)  # (N, 2)
     
     def compute_boundary_integral(self, sofa, model, config):
@@ -767,17 +1058,13 @@ class BoundaryIntegralSolver:
         centroids, areas, normals = self.compute_triangle_properties()
         
         #Rescaling
-        #centroids /= config['scale']
         areas /= config['scale']**2
         x_ear /= config['scale']
-
-        #print(x_ear)
 
         # Incident pressure at ear positions
         P_inc_ear = self.inc_wave(x_ear, config)  # (N_ears, 2)
 
         # Pressure at boundary points using the model
-        #with torch.no_grad():
         centroids = centroids.to(self.dtype)
         P_boundary_complex, centroids = model(centroids, diff = True)  # (M, 2) [real, imag] #centroids * config['scale']
         P_boundary = torch.complex(P_boundary_complex[:, 0], P_boundary_complex[:, 1])  # (M,)
@@ -981,13 +1268,6 @@ def evaluate_circle_estimation_d(model, config, R):
 
     cos_sim_real = cosine_similarity(prediction[:,0], target[:,0])
     cos_sim_imag = cosine_similarity(prediction[:,1], target[:,1])
-
-    real_error = prediction[:, 0] - target[:, 0]
-    imag_error = prediction[:, 1] - target[:, 1]
-    # Compute per-sample NMSE values
-    nmse_real_vals = (real_error ** 2) / (target[:, 0] ** 2 + 1e-8)
-    nmse_imag_vals = (imag_error ** 2) / (target[:, 1] ** 2 + 1e-8)
-
 
     print(f"NMSE Real: {nmse_real.item():.4f}, "
       f"NMSE Imag: {nmse_imag.item():.4f}")
