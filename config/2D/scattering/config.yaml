@@ -1,0 +1,47 @@
+frequency: 1000
+celerity: 343
+res: 512
+L: 0.5
+rff: 512
+pml_size: 0.25
+pml_dampling: 5
+device: 'cuda:0'
+step_size: 20
+input_dim: 2
+hidden_dim: 64
+output_dim: 2
+num_layers: 3
+do_skip: True
+first_omega: 30.
+hidden_omega: 30.
+sigma_fourier: 1.
+mu: 1.
+sigma: 0.1
+adam: 
+  lr: 0.0001
+  epochs: 25000
+  n_scheduler: 15000
+  gamma: 0.5
+  batch_size:  8192
+  batch_boundary: 4096
+  keeping_time: 25
+
+fine:
+  lr: .1
+  epochs: 250
+  n_scheduler: 500
+  gamma: 0.2
+  batch_size: 32768
+  batch_boundary: 8192
+  keeping_time: 3
+  max_iter: 25
+
+lora:
+  lr: 1.
+  epochs: 200
+  n_scheduler: 500
+  gamma: 0.2
+  batch_size: 32768
+  batch_boundary: 8192
+  keeping_time: 3
+  max_iter: 25

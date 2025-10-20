@@ -1,0 +1,27 @@
+r: 4
+hidden_features: 32
+num_hlayers: 3
+omega_init: 30.0
+omega_0: 30.0
+device: 'cuda:0'
+adam: 
+  lr: 0.00001
+  epochs: 100000
+  n_scheduler: 15000
+  gamma: 0.5
+  batch_size_dir: 24
+  batch_size: 8192
+  keeping_time: 30
+  direction_keeping_time: 20
+
+fine:
+  lr: .1
+  epochs: 5
+  n_scheduler: 500
+  gamma: 0.5
+  batch_size: 16384
+  batch_size_dir: 12
+  batch_boundary: 8192
+  keeping_time: 5
+  direction_keeping_time: 3
+  max_iter: 20

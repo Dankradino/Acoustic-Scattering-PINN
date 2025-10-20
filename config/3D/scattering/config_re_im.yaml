@@ -1,0 +1,36 @@
+frequency: 5
+celerity: 1
+res: 128
+L: 1
+pml_size: 0.25
+pml_dampling: 5
+rff: 128
+map_name: 'vmbf'
+model: 're_im'
+device: 'cuda:0'
+input_dim: 3
+hidden_dim: 3
+output_dim: 2
+num_layers: 1
+first_omega: 10.
+hidden_omega: 30.
+sigma_fourier: 1.
+mu: 1.
+sigma: 0.1
+adam: 
+  lr: 0.0001
+  epochs: 250
+  n_scheduler: 15000
+  gamma: 0.5
+  batch_size: 8192
+  keeping_time: 25
+
+fine:
+  lr: 0.05
+  epochs: 25
+  n_scheduler: 500
+  gamma: 0.2
+  batch_size: 32768
+  batch_boundary: 32768
+  keeping_time: 25
+  max_iter: 20
