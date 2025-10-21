@@ -159,7 +159,8 @@ def densify_polygon_with_normals(polygon, total_points=1000):
 #####################################################################################
 
 
-def generate_sphere(filename='trimesh_sphere.obj', radius=1.0, subdivisions=2):
+
+def generate_sphere(filename='trimesh_sphere.obj', radius=1.0, subdivisions=2, center=(0, 0, 0)):
     """
     Use trimesh's built-in sphere generation (most efficient and robust).
     
@@ -167,14 +168,19 @@ def generate_sphere(filename='trimesh_sphere.obj', radius=1.0, subdivisions=2):
         filename: Output filename for the mesh
         radius: Radius of the sphere
         subdivisions: Number of subdivision levels
+        center: Tuple of (x, y, z) for the sphere's center
     """
-    # Use trimesh's built-in sphere creation
+    # Create the sphere at origin
     sphere = trimesh.creation.icosphere(subdivisions=subdivisions, radius=radius)
+    
+    # Translate to desired center
+    sphere.apply_translation(center)
     
     # Export to OBJ
     sphere.export(filename)
     
     print(f"Created trimesh sphere: {filename}")
+    print(f"  Center: {center}")
     print(f"  Radius: {radius}")
     print(f"  Subdivisions: {subdivisions}")
     print(f"  Vertices: {len(sphere.vertices)}")
@@ -183,7 +189,6 @@ def generate_sphere(filename='trimesh_sphere.obj', radius=1.0, subdivisions=2):
     print(f"  Volume: {sphere.volume:.6f}")
     
     return filename
-
 
 def get_sphere_param(vertices):
     R = np.linalg.norm(vertices[0])
