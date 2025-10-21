@@ -392,8 +392,7 @@ class Trainer3D(BaseTrainer3D):
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float() / 255.0 # Add a batch dimension
 
         # Log the image to TensorBoard
-        #self.writer.add_image(f'Scattered_field_pred/{epoch}', image_tensor[0], 0)  # Add the image to TensorBoard
-        self.writer.add_image(f'Diff_field/{epoch}', image_tensor[0], 0)
+        self.writer.add_image(f'Scattered_field/{epoch}', image_tensor[0], 0)
 
 
         # Close the plot and the buffer

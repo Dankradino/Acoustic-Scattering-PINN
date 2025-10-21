@@ -176,13 +176,19 @@ class LossPINN(ABC):
         return loss_real + loss_imag
     
         
-    def get_bc_loss(self, mode = 'neumann'):
+    def get_bc_loss(self, mode = 'plane'):
+        """
+        Defines the nature of Robin boundary conditions.
+        source -> The incoming wave radiate from a source point.
+        plane -> The incoming wave is a plane wave.
+        """
         if mode == 'source':
             return self.source_rbc_loss
         elif mode =='plane':
             return self.plane_wave_rbc_loss
         else : 
-            return self.plane_wave_rbc_loss
+            raise ValueError(f"Invalid mode '{mode}'. Choose 'source' or 'plane'.")
+            
     
 
 class BaseTrainer2D(LossPINN):
