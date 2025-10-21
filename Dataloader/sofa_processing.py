@@ -44,10 +44,7 @@ def load_hrtf(sofa_path, vertices, DTYPE, device):
     print("Vertices corresponding to ears:")
     for i, v in enumerate(closest_vertices):
         print(f"Vertex {i+1}: {v}")
-
-    #attributes = dir(sofa_file)
-    #print(attributes)
-
+        
     freqs = np.fft.fftfreq(N, d=1/fs)   # Shape: (F,)
     # FFT: Compute HRTF for all positions and both ears
     hrtf_values = np.fft.fft(hrir_values, axis=2)       # Shape: (M, R, F)
