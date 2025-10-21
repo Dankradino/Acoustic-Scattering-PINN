@@ -480,13 +480,6 @@ def evaluate_sphere_estimation(model, trainer, config, R, display = False):
     cos_sim_real = cosine_similarity(prediction[:,0], target[:,0])
     cos_sim_imag = cosine_similarity(prediction[:,1], target[:,1])
 
-    real_error = prediction[:, 0] - target[:, 0]
-    imag_error = prediction[:, 1] - target[:, 1]
-    # Compute per-sample NMSE values
-    nmse_real_vals = (real_error ** 2) / (target[:, 0] ** 2 + 1e-8)
-    nmse_imag_vals = (imag_error ** 2) / (target[:, 1] ** 2 + 1e-8)
-
-
     print(f"NMSE Real: {nmse_real.item():.4f}, "
       f"NMSE Imag: {nmse_imag.item():.4f}")
     print(f"Cosine Similarity Real: {cos_sim_real.item()}, Cosine Similarity Imag: {cos_sim_imag.item()}")
@@ -842,15 +835,7 @@ def evaluate_custom_estimation(model, trainer):
 
     cos_sim_real = cosine_similarity(prediction[:,0], target[:,0])
     cos_sim_imag = cosine_similarity(prediction[:,1], target[:,1])
-
-    real_error = prediction[:, 0] - target[:, 0]
-    imag_error = prediction[:, 1] - target[:, 1]
-    # Compute per-sample NMSE values
-    nmse_real_vals = (real_error ** 2) / (target[:, 0] ** 2 + 1e-8)
-    nmse_imag_vals = (imag_error ** 2) / (target[:, 1] ** 2 + 1e-8)
-
-
-
+    
     print(f"NMSE Real: {nmse_real.item():.4f}, "
       f"NMSE Imag: {nmse_imag.item():.4f}")
     print(f"Cosine Similarity Real: {cos_sim_real.item()}, Cosine Similarity Imag: {cos_sim_imag.item()}")
