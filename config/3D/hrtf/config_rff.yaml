@@ -1,5 +1,5 @@
-frequency: 5
-celerity: 1
+frequency: 1000
+celerity: 343
 res: 128
 L: 1
 pml_size: 0.25
@@ -11,11 +11,9 @@ input_dim: 3
 hidden_dim: 512
 output_dim: 2
 num_layers: 3
-first_omega: 10.
+first_omega: 30.
 hidden_omega: 30.
 sigma_fourier: 1.
-mu: 1.
-sigma: 0.1
 adam: 
   lr: 0.0001
   epochs: 75000

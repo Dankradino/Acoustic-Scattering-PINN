@@ -1,7 +1,7 @@
-frequency: 5
-celerity: 1
+frequency: 1000
+celerity: 343
 res: 128
-L: 0.75
+L: 1.
 pml_size: 0.25
 pml_dampling: 5
 model: 'siren'
@@ -13,8 +13,6 @@ num_layers: 4
 first_omega: 30.
 hidden_omega: 30.
 sigma_fourier: 1.
-mu: 1.
-sigma: 0.1
 adam: 
   lr: 0.0001
   epochs: 75000

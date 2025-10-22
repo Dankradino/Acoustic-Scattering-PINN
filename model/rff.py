@@ -76,7 +76,7 @@ class Polar_RFF(PINN):
         activation = activation #Shared alpha parameter across all layers to be more physically consistent
 
         # First layer: Fourier features to hidden
-        first_layer = nn.Linear(2 * self.num_fourier_features, self.hidden_dim) #RWF(2 * self.num_fourier_features, self.hidden_dim, self.mu, self.sigma)
+        first_layer = nn.Linear(2 * self.num_fourier_features, self.hidden_dim)
         
         # Hidden layers with alternating MLP and activation
         other_layers = []
@@ -130,18 +130,18 @@ class PINN_directional_RFF(PINN):
         activation = QuadraticTanh(alpha = 1.)
 
         # First layer: Fourier features to hidden
-        first_layer = nn.Linear(2 * self.num_fourier_features, self.hidden_dim) #RWF(2 * self.num_fourier_features, self.hidden_dim, self.mu, self.sigma)
+        first_layer = nn.Linear(2 * self.num_fourier_features, self.hidden_dim) 
         
         # Hidden layers with alternating RWF and activation
         other_layers = []
         other_layers.append(activation)
         
         for _ in range(self.num_layers - 1):
-            other_layers.append(nn.Linear(self.hidden_dim, self.hidden_dim)) #RWF(self.hidden_dim, self.hidden_dim, self.mu, self.sigma))
+            other_layers.append(nn.Linear(self.hidden_dim, self.hidden_dim)) 
             other_layers.append(activation)
         
         # Final layer: hidden to output
-        final_layer = nn.Linear(self.hidden_dim, self.output_dim) #RWF(self.hidden_dim, self.output_dim, self.mu, self.sigma)
+        final_layer = nn.Linear(self.hidden_dim, self.output_dim) 
         
         # Construct the network
         self.net = nn.Sequential(first_layer, *other_layers, final_layer)   #Rename to net

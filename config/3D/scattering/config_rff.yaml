@@ -1,5 +1,5 @@
-frequency: 5
-celerity: 1
+frequency: 1000
+celerity: 343
 res: 64
 L: 0.5
 pml_size: 0.25
@@ -7,9 +7,6 @@ pml_dampling: 5
 rff: 512
 model: 'rff'
 device: 'cuda:0'
-grad_norm: False
-lr_gnorm: 0.01
-step_size: 20
 input_dim: 3
 hidden_dim: 512
 output_dim: 2
@@ -18,8 +15,6 @@ do_skip: True
 first_omega: 30.
 hidden_omega: 30.
 sigma_fourier: 1.
-mu: 1.
-sigma: 0.1
 adam: 
   lr: 0.0001
   epochs: 40000
