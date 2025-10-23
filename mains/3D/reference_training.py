@@ -33,13 +33,11 @@ def main():
     with open(f"config/3D/scattering/config_{model_name}.yaml") as file:
         config = yaml.safe_load(file)
 
-
     #Hyperparameters for experiment
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     DTYPE = torch.float
-    print('Device :', device)
 
-    # Frequency
+    # Grid parameters
     L = config['L']
     Lpml = config['pml_size']
     fake_bd = L + Lpml #Set to 1
@@ -78,7 +76,7 @@ def main():
         # Load almond mesh for trimesh
         mesh =  trimesh.load(mesh_path)
         normals = mesh.vertex_normals
-        print(f"Mesh: {mesh.vertices.shape[0]} vertices, {mesh.faces.shape[0]} faces")
+    print(f"Mesh: {mesh.vertices.shape[0]} vertices, {mesh.faces.shape[0]} faces")
     
     boundary = torch.tensor(boundary, dtype=DTYPE, device=device)
     normals = torch.tensor(normals, dtype=DTYPE, device=device)
