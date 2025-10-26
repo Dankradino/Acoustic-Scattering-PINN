@@ -93,7 +93,7 @@ class LossPINN(ABC):
         torch.Tensor, scalar
             Combined loss for real and imaginary parts of Robin BC: ∂u/∂n + Z*u = -∂u_inc/∂n - Z*u_inc 
         """
-        #print(direction.shape, self.direction.shape)
+
         if forward_method is not None:
             u, boundary_points = forward_method(boundary_points)
         else : 

@@ -148,6 +148,33 @@ python phisk_training_from_scratch.py --J 20 --model rff --save_dir ./checkpoint
 
 ---
 
+
+### 5. `hrtf_training.py`
+**Purpose**: Exemple of one frequency HRTF PHISK training with a custom save id for the experiment in SONICOM experiment setup.
+
+**Description**:
+Automates the full workflow:
+1. Train reference PINN for one direction
+2. Perform LoRA adaptation for `J` directions
+3. Train PHISK hypernetwork
+4. Save all intermediate and final models
+
+**Example usage**:
+```bash
+python phisk_training_from_scratch.py --J 24 --model rff --subject_id P0002 --freq_idx 4
+```
+
+**Requirements**:
+- Subject id
+- Frequency index for sofa comparison
+
+**Output**:
+- Reference model in `f"checkpoints/hrtf/{subject_id}_{config['frequency']}/scattering/"{model_name}.pth`
+- LoRA adaptations in `f"checkpoints/hrtf/{subject_id}_{config['frequency']}/lora/"{model_name}.pth`
+- Final PHISK model in `f"checkpoints/hrtf/{subject_id}_{config['frequency']}/scattering/"{model_name}.pth`
+
+---
+
 ## Custom Mesh Processing
 
 ### 2D Custom Shapes

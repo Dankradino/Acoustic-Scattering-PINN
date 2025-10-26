@@ -2,17 +2,17 @@ import argparse
 import torch
 import torch.nn as nn
 import numpy as np
-from model import init_model_from_conf
-from shape import densify_polygon_with_normals, generate_sphere, get_sphere_param
-from Trainer import HRTFTrainer
+from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
+from Trainer import Trainer3D
+from Trainer.phisk3D import initialize_phisk_trainer3D 
 from eval import evaluate_hrtf
-from utils import generate_config_id, create_3d_mesh_mask
-from visuals import visualize_dataloader_points, PressureFieldVisualizer
+from utils import generate_config_id, create_3d_mesh_mask, load_config, fibonacci_sphere
 from Dataloader import create_dataloader3D, loader3D, load_hrtf
 from pysofaconventions.SOFAFile import SOFAFile
 import yaml
 import trimesh
-
+import gc
+import os
 
 def Z_function(f, DTYPE, device):
     '''
@@ -34,39 +34,86 @@ def Z_function(f, DTYPE, device):
     print(f'Resulting Robin coefficient {absorption}')
     return torch.tensor([0., absorption], dtype = DTYPE, device = device)
 
+
+def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir):
+        '''
+        Adapt a reference model to a new direction using LoRA scheme and save produced weights in lora_dir
+        '''
+        import torch
+        from copy import deepcopy
+        torch.manual_seed(30 + i)
+
+        # Move direction to GPU and normalize
+        direction = direction.to(config['device'])
+        direction =  direction / torch.linalg.norm(direction)
+        print('Adapted direction' , direction)
+
+        conf_copy = deepcopy(config)
+        conf_copy['direction'] = direction
+
+        # Move dataloader tensors to GPU
+        dataloader = {}
+        for key, value in dataloader_cpu.items():
+            if isinstance(value, torch.Tensor):
+                dataloader[key] = value.to(config['device'])
+            else:
+                dataloader[key] = value
+
+        #Load reference model
+        reference_model = init_model_from_conf(conf_copy).to(config['device'])
+        reference_model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth')) 
+
+        #Initialize adapted network              
+        if model_name == 'rff':
+            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=config['lora_r'], custom_activation=model[1])  #Justification for r=12 is done in the github report.
+        else:  
+            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=config['lora_r'])
+        conf_copy['lora']['optimizer'] = optimizer
+
+        #Train LoRA adapted network
+        trainer = Trainer3D(model, dataloader, loss_fn, conf_copy)
+        trainer.train(lora_dir=lora_dir)
+
+        del reference_model, model, trainer, dataloader, conf_copy
+
+
 def main():
     # Set up argument parsing
     parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
     parser.add_argument('--model', type=str, required=True, help='The model name or type to use (e.g., "xxx")')
-    parser.add_argument('--preload', type=bool, default=False, help='True if pretrained model')
-    parser.add_argument('--res', type=int, default=100, help='Resolution of the grid')
-    parser.add_argument('--L', type=float, default=5.0, help='Grid size')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
-    parser.add_argument('--id', type = str, default=None, help='id of model to load')
+    parser.add_argument('--subject_id', type = str, default="P0002", help='id of the subject')
+    parser.add_argument('--J', type=bool, default=6, help='True if pretrained model')
+    parser.add_argument('--freq_idx', type = int, default=3, help='indice of frequency used from sofa file')
     args = parser.parse_args()
+    
     model_name = args.model
-    preload = args.preload
-    id = args.id
+    J = args.J
+    freq_idx  = args.freq_idx
+    subject_id = args.subject_id
     torch.manual_seed(30)
 
-    #Hyperparameters for experiment
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    DTYPE = torch.float
+    #Training loss
+    loss_fn = nn.MSELoss()
 
-    subject_id = "P0002"
-    mesh_path = f"/home/tancrede/SONICOM/{subject_id}/3DSCAN/{subject_id}_wtt_prepd.stl" #_watertight.stl" #_wtt_prepd.stl"
-    #f"/home/tancrede/SONICOM/{subject_id}/3DSCAN/{subject_id}_watertight.stl" 
-    #sofa_path = f"/home/tancrede/SONICOM/{subject_id}/HRTF/HRTF/44kHz/{subject_id}_Windowed_44kHz.sofa"#_FreeFieldComp_44kHz.sofa"
-    sofa_path = f"/home/tancrede/SONICOM/{subject_id}/SYNTHETIC_HRTF/HRIR_SONICOM_44100.sofa"
-    normalize_path = f"/home/tancrede/SONICOM/{subject_id}/3DSCAN/{subject_id}_normalize.stl"
+    #Load config
+    config_path = f"config/3D/hrtf/config_{model_name}.yaml"
+    config, DTYPE = load_config(config_path)
+    config['hrtf'] = True
+    config['custom_shape'] = True
 
+    with open(f"config/3D/hrtf/hconfig.yaml") as file:
+        hconfig = yaml.safe_load(file)
+
+    # Load Head mesh and sofa file
+    mesh_path = f"SONICOM/{subject_id}/3DSCAN/{subject_id}_wtt_prepd.stl"
+    sofa_path = f"SONICOM/{subject_id}/SYNTHETIC_HRTF/HRIR_SONICOM_44100.sofa"
+    normalize_path = f"SONICOM/{subject_id}/3DSCAN/{subject_id}_normalize.stl"
     mesh = trimesh.load_mesh(mesh_path, process=False)
-
     print(f'Number of mesh vertices : {mesh.vertices.shape[0]}')
-
+   
+    # Mesh preprocessing
     # Conversion of mm to m
     mesh.vertices /= 1000.0  # now in meters
-    #mesh.vertices -= mesh.vertices.mean(axis=0)
     scale = mesh.bounding_box.extents.max()
     scale = 0.75 * 2.0 / scale # 0.5 * [-1, 1]
     print('Scale',scale)
@@ -75,115 +122,147 @@ def main():
     mesh.export(normalize_path)
     mesh_path = normalize_path
     mesh =  trimesh.load(mesh_path)
-
-    sofa = load_hrtf(sofa_path, mesh.vertices, DTYPE, device)
-
-    if id!=None:
-        with open(f"checkpoints/hrtf/{id}/config.yaml") as file:
-            config = yaml.unsafe_load(file)
-            config['id'] = id
-            config['adam']['batch_size'] = 2
-    else:
-        with open(f"config/hrtf/config_{model_name}.yaml") as file:
-            config = yaml.safe_load(file)
-
-    config['frequency'] = sofa['freqs'][2]
-    print('Frequency of interest', config['frequency'])
-    config['celerity'] = 343
-    # Create 2D grid of x points
-    L = config['L']
-    Lpml = config['pml_size']
-    fake_bd = L + Lpml #Set to 1
-
-
-    direction = torch.tensor([1., 0., 0.],device = device).unsqueeze(1)
-    print('direction', direction)
-    direction =  direction / torch.linalg.norm(direction)
-    config['direction'] = direction
-    config['source'] = 1.5  * scale * direction.T  #Physical position of the source 1.5 meters in the experiment # * scale
-    #print(sofa['mic_positions'].shape)
-    #config['source'] = 0.98 * sofa['mic_positions'][0]
-    print('Source relative distance' , torch.linalg.norm(config['source'], dim = -1))
-    config['scale'] = scale
-    config['p0'] = 10
-
-    # Model
-    model = init_model_from_conf(config).to(device)
-    loss_fn = nn.MSELoss()
-
-    config['preload'] = preload
-    if id==None:
-        config['id'] = generate_config_id(config)
-        id = config['id']
-        print('Generated id :', config['id'])
-
-    if preload:
-        model.load_state_dict(torch.load(f'checkpoints/hrtf/{id}/{model_name}_pre.pth'))
-
     boundary = mesh.vertices
     normals = mesh.vertex_normals
-    boundary = torch.tensor(boundary, dtype=DTYPE, device=device)
-    normals = torch.tensor(normals, dtype=DTYPE, device=device)
-    #print('ear shape', sofa["ear_idx"])
-    idx_ear = sofa["ear_idx"].cpu().numpy()  # removal of ears canal entrance in boundary conditions
-    #idx_ear = np.array(idx_ear, dtype = np.int32)
+    boundary = torch.tensor(boundary, dtype=DTYPE, device=config['device'])
+    normals = torch.tensor(normals, dtype=DTYPE, device=config['device'])
 
+    #Load sofa and frequency definition
+    sofa = load_hrtf(sofa_path, mesh.vertices, DTYPE, config['device'])
+    config['frequency'] = sofa['freqs'][freq_idx]
+    save_dir = f"checkpoints/hrtf/{subject_id}_{config['frequency']}/scattering/"
+    lora_dir = f"checkpoints/hrtf/{subject_id}_{config['frequency']}/lora/"
+    hsave_dir = f"checkpoints/hrtf/{subject_id}_{config['frequency']}/hyper/"
+    directories = [save_dir, lora_dir, hsave_dir]
+
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+        print(f"✅ Created: {directory}")
+    print('Frequency of interest', config['frequency'])
+    
+    #Source position
+    direction = config['direction']
+    config['source'] = 1.5  * scale * direction.T  #Physical position of the source 1.5 meters in the experiment # * scale
+    print('Source relative distance' , torch.linalg.norm(config['source'], dim = -1))
+    config['scale'] = scale
+    config['p0'] = 0.1
+    config['mode'] = 'source'
+
+    #Ear entrance canal removal
+    idx_ear = sofa["ear_idx"].cpu().numpy()  # removal of ears canal entrance in boundary conditions
     mask = np.ones(len(boundary), dtype=bool)
     mask[idx_ear] = False
-
-    # Apply mask
     boundary = boundary[mask]
     normals = normals[mask]
 
+    print('Train a reference model from scratch')
+    reference_model = init_model_from_conf(config).to(config['device'])
 
-    #config['adam']['batch_size'] = 4*config['adam']['batch_size'] 
-    #config['adam']['batch_size'] = 4*config['adam']['batch_size'] 
-    
-    #
-    #config['fine']['batch_size'] = 2 #2*config['fine']['batch_size'] 
-    #config['fine']['batch_boundary'] = 2*config['fine']['batch_boundary'] 
-
-    #32768
-    # create_dataloader3D(mesh_path, config ,fake_bd)
-    # points = loader3D(config)
-#     create_ear_aware_dataloader3D(
-#     mesh=mesh,
-#     config=config,
-#     pml_boundary=fake_bd,
-#     L=L,
-#     ear_positions={'positions' : sofa['mic_positions'].cpu().numpy()},
-#     ear_sphere_radius= 0.1 * scale,  # x sphere around each ear
-#     ear_percentage=20.0,     # X% of points near ears  #X / 2 in fact
-#     method='spherical_shell'
-# )
+    #Create training points
     create_dataloader3D(
     mesh=mesh,
     cache_dir='./data_points',
     config=config,
-    pml_boundary=fake_bd,
+    pml_boundary=config['L']+config['pml_size'],
     method='spherical_shell'
     )
     points = loader3D(config, cache_dir='./data_points')
+
     dataloader = {
         'adam' : points['adam'],
-        'fine' : points['fine'],    
+        'fine' : points['fine'],
         'normals' : normals,
         'boundary' : boundary,
         'polygon' : mesh.vertices,
         'mesh_mask': create_3d_mesh_mask(config, mesh),
-
+        'R': config['mesh_param']['r']
     }
 
-    trainer = HRTFTrainer(model, dataloader, loss_fn, config, sofa)
+    trainer = Trainer3D(reference_model, dataloader, loss_fn, config)
+    trainer.train(save_dir=save_dir)
 
-    trainer.train()
+
+    #LoRA PINN framework
+    dataloader_cpu = {
+        'lora' : points['fine'],    #N_points[fine] > N_points[lora] so we ccan reuse the same one, you can regenerate points if you want
+        'normals' : normals.cpu(),
+        'boundary' : boundary.cpu(),
+        'polygon' : mesh.vertices,
+        'mesh_mask': create_3d_mesh_mask(config, mesh),
+        'R': config['mesh_param']['r']
+    }
+
+    #Creating direction to adapt to
+    directions = fibonacci_sphere(J, device='cpu', dtype=DTYPE)  
+    directions = directions.unsqueeze(-1) 
+
+    #Training of LoRA adapted networks
+    config['lora_train'] = True
+    config['lora_r'] = hconfig['r']
+    print(f'Now adapting it to {J} directions with LoRA')
+    multiprocess = False # SET TO TRUE IF MULTIPROCESS LEARNING IS POSSIBLE
+    if multiprocess : 
+        processes = []
+
+        for i, direction in enumerate(directions):
+            p = mp.Process(
+                target=train_direction,
+                args=(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
+            )
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+    else :
+        for i, direction in enumerate(directions):
+            train_direction(
+                i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
+            
+            gc.collect()               # clear unused Python objects
+            torch.cuda.empty_cache()   # release cached CUDA memory
+    print("Direction adaptation with LoRA done.")
+    print("Proceed to train phisk now.")
 
 
-    model.eval()
+    #PHISK Trainer initialization
+    hconfig['load'] = False
+    trainer = initialize_phisk_trainer3D(
+        base_network=reference_model,
+        hypernetwork_path=None,  # We're not using an old PHISK
+        dataloader=dataloader,
+        loss_fn=loss_fn,
+        config=config,
+        hconfig=hconfig,
+        lora_dir=lora_dir
+    )
 
-    print('id of experiment:', config['id'])
+    #PHISK training points creation
+    config['adam'] = hconfig['adam']
+    config['fine'] = hconfig['fine']   #IF NECESSARY AS L BFGS phase is not baseline for PHISK.
 
-    evaluate_hrtf(sofa, model, mesh_path, config)
+    create_dataloader3D(
+    mesh=mesh,
+    cache_dir='./data_points',
+    config=config,
+    pml_boundary=config['L']+config['pml_size'],
+    method='spherical_shell'
+    )
+    points = loader3D(config, cache_dir='./data_points')
+
+    dataloader = {
+        'adam' : points['adam'],
+        'fine' : points['fine'],
+        'normals' : normals,
+        'boundary' : boundary,
+        'polygon' : mesh.vertices,
+        'mesh_mask': create_3d_mesh_mask(config, mesh),
+        'R': config['mesh_param']['r']
+    }
+
+
+    print("Training PHISK")
+    trainer.train(save_dir = hsave_dir)
 
 if __name__ == '__main__':
     main()

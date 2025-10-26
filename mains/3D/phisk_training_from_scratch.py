@@ -92,8 +92,6 @@ def main():
     with open(f"config/3D/scattering/hconfig.yaml") as file:
         hconfig = yaml.safe_load(file)
 
-
-
     #Load mesh
     if mesh_path is None:
         config['custom_shape'] = False
