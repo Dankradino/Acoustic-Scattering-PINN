@@ -1,22 +1,28 @@
+#Simulation parameters
 frequency: 1000
 celerity: 343
+ref_direction : [1.,1.]
 res: 512
+
+#Geometry parameters
 L: 0.5
-rff: 512
 pml_size: 0.25
 pml_dampling: 5
-device: 'cuda:0'
-step_size: 20
+mesh_param:
+  r: 0.2
+  center: [0.0, 0.0]
+
+#Model parameters
+rff: 512
 input_dim: 2
 hidden_dim: 64
 output_dim: 2
 num_layers: 3
-do_skip: True
 first_omega: 30.
 hidden_omega: 30.
 sigma_fourier: 1.
-mu: 1.
-sigma: 0.1
+
+#Training parameters
 adam: 
   lr: 0.0001
   epochs: 25000

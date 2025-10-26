@@ -1,9 +1,15 @@
+#Simulation parameters
 frequency: 1000
 celerity: 343
+ref_direction : [1.,1.,1.]
 res: 128
+
+#Geometry parameters
 L: 1
 pml_size: 0.25
 pml_dampling: 5
+
+#Model parameters
 rff: 512
 model: 'rff'
 device: 'cuda:0'
@@ -14,6 +20,8 @@ num_layers: 3
 first_omega: 30.
 hidden_omega: 30.
 sigma_fourier: 1.
+
+#Training parameters
 adam: 
   lr: 0.0001
   epochs: 75000
@@ -26,7 +34,7 @@ adam:
 
 fine:
   lr: 0.1
-  epochs: 300
+  epochs: 500
   n_scheduler: 500
   gamma: 0.2
   batch_size: 32768
@@ -34,3 +42,13 @@ fine:
   keeping_time: 2
   max_iter: 25
   num_workers: 0
+
+lora:
+  lr: .1
+  epochs: 300
+  n_scheduler: 1000
+  gamma: 0.2
+  batch_size: 32768
+  batch_boundary: 32768
+  keeping_time: 3
+  max_iter: 25
