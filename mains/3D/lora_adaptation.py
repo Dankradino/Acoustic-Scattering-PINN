@@ -7,26 +7,12 @@ import torch.nn as nn
 import numpy as np
 from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
 from shape import generate_sphere, get_sphere_param
-from utils import create_3d_mesh_mask, load_config
+from utils import create_3d_mesh_mask, load_config, fibonacci_sphere
 from Trainer import Trainer3D
 from Dataloader import create_dataloader3D, loader3D
 from eval import evaluate_sphere_estimation, evaluate_custom_estimation
 import trimesh
 import gc
-
-def fibonacci_sphere(n_points, device='cpu', dtype=torch.float32):
-    """Generate approximately evenly distributed unit vectors on a sphere."""
-    indices = torch.arange(0, n_points, dtype=dtype, device=device) + 0.5
-
-    phi = torch.acos(1 - 2 * indices / n_points)       # polar angle
-    theta = np.pi * (1 + 5**0.5) * indices             # golden angle * index
-
-    x = torch.sin(phi) * torch.cos(theta)
-    y = torch.sin(phi) * torch.sin(theta)
-    z = torch.cos(phi)
-
-    directions = torch.stack([x, y, z], dim=1)  # (n_points, 3)
-    return directions
 
 
 def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, mesh_param, save_dir, lora_dir):

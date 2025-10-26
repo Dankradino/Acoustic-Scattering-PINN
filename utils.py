@@ -41,6 +41,19 @@ def generate_grid(L ,res ,dim, device = 'cpu'):
         raise ValueError("Dimension must be 2 or 3.")
     return grid
     
+def fibonacci_sphere(n_points, device='cpu', dtype=torch.float32):
+    """Generate approximately evenly distributed unit vectors on a sphere."""
+    indices = torch.arange(0, n_points, dtype=dtype, device=device) + 0.5
+
+    phi = torch.acos(1 - 2 * indices / n_points)       # polar angle
+    theta = np.pi * (1 + 5**0.5) * indices             # golden angle * index
+
+    x = torch.sin(phi) * torch.cos(theta)
+    y = torch.sin(phi) * torch.sin(theta)
+    z = torch.cos(phi)
+
+    directions = torch.stack([x, y, z], dim=1)  # (n_points, 3)
+    return directions
 
 
 #######################################################################
@@ -395,6 +408,12 @@ def sample_with_blue_noise(boundary, normals, config, epoch):
     )
     
     return boundary_points, normals_points
+
+
+
+#######################################################################
+# Load configuration file
+#######################################################################
 
 def load_config(config_path):
     DTYPE = torch.float # Hard-coded
