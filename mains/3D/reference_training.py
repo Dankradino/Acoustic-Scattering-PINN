@@ -17,11 +17,11 @@ Train a reference PINN for a custom shape if given or for a sphere define by con
 
 def main():
     # Set up argument parsing
-    parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
+    parser = argparse.ArgumentParser(description='Train a 3D reference model')
     parser.add_argument('--model', type=str, required=True, help='The model name to use (e.g., "xxx")')
     parser.add_argument('--preload', type=bool, default=False, help='True if pretrained model')
     parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save file for reference weights')
-    parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular circle defined by config[mesh_param]')
+    parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular sphere defined by config[mesh_param]')
     args = parser.parse_args()
     model_name = args.model
     preload = args.preload

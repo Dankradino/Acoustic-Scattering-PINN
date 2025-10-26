@@ -26,7 +26,6 @@ class Trainer3D(BaseTrainer3D):
         self.lora_dir = lora_dir
         self.writer = SummaryWriter(log_dir = log_dir)
         print(f'TensorBoard logs are being saved to: {os.path.abspath(log_dir)}')
-        print(self.lora)
         if self.lora : 
             # Convert direction to filename format
             direction_str = ""

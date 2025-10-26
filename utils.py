@@ -5,6 +5,7 @@ from scipy.special import hankel1
 from model.lora import LoRALinear
 import hashlib
 from torch.autograd import grad
+from matplotlib.path import Path
 
 
 '''
@@ -155,6 +156,42 @@ def generate_config_id(config: dict) -> str:
     joined = "_".join(flat_items)
     hash_id = hashlib.md5(joined.encode()).hexdigest()[:10]  # Short hash
     return f"cfg_{hash_id}"
+
+
+#######################################################################
+# Mask generation (for plotting)
+#######################################################################
+
+def create_2d_shape_mask(config, boundary_points):
+    """Create 2D boolean mask from boundary points
+    
+    Args:
+        config: dict with 'L' (domain half-size) and 'res' (resolution)
+        boundary_points: numpy array of shape (N, 2) defining the boundary polygon
+        
+    Returns:
+        shape_mask: 2D boolean array of shape (res, res)
+    """
+    # Create coordinate grids
+    L = config['L']
+    res = config['res']
+    x = np.linspace(-L, L, res)
+    y = np.linspace(-L, L, res)
+    
+    # Create meshgrid
+    X, Y = np.meshgrid(x, y, indexing='xy')
+    
+    # Flatten coordinates for batch processing
+    points = np.stack([X.flatten(), Y.flatten()], axis=1)
+    
+    # Create path from boundary points and check containment
+    path = Path(boundary_points)
+    inside_mask = path.contains_points(points)
+    
+    # Reshape back to 2D
+    shape_mask = inside_mask.reshape(res, res)
+    
+    return shape_mask
 
 def create_3d_mesh_mask(config, mesh):
     """Create 3D boolean mask from trimesh"""

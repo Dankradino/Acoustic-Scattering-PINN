@@ -12,13 +12,13 @@ import os
 
 def main():
     # Set up argument parsing
-    parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
+    parser = argparse.ArgumentParser(description='Train a PHISK model (LoRA adaptation beforehand required)')
     parser.add_argument('--model', type=str, required=True, help='The model name to use (e.g., "xxx")')
-    parser.add_argument('--preload', type=bool, default=False, help='True if pretrained model')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
+    parser.add_argument('--preload', type=bool, default=False, help='True if pretrained phisk model')
     parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save directory for reference weights')
-    parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/3D/phisk/', help='Save directory for phisk weights')
+    parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/3D/phisk/', help='Save directory for PHISK weights')
     parser.add_argument('--lora_dir', type=str, default='checkpoints/3D/lora/', help='Directory containing LoRA weights')
+    parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular sphere defined by config[mesh_param]')
     args = parser.parse_args()
     
     model_name = args.model
@@ -61,7 +61,7 @@ def main():
     reference_model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth'))
     print('Done!')
 
-    config['preload'] = preload
+    config['preload'] = False
 
     # Check if LoRA directory exists and has files
     if not os.path.exists(lora_dir):
@@ -98,24 +98,36 @@ def main():
         'mesh_mask': create_3d_mesh_mask(config, mesh),
         'R' : config['mesh_param']['r']
     }
-
-    hconfig['load'] = True
-
     # Initialize PHISK trainer
-    trainer = initialize_phisk_trainer3D(
-        base_network=reference_model,
-        hypernetwork_path= None,  # We're not using an old hypernetwork
-        dataloader=dataloader,
-        loss_fn=loss_fn,
-        config=config,
-        hconfig=hconfig,
-        lora_dir=lora_dir
-    )
+    if preload:
+        hconfig['load'] = True  #True if we load an old PHISK.
+        trainer = initialize_phisk_trainer3D(
+            base_network=reference_model,
+            hypernetwork_path= hsave_dir,  # We're using a trained (at least partially) PHISK.
+            dataloader=dataloader,
+            loss_fn=loss_fn,
+            config=config,
+            hconfig=hconfig,
+            lora_dir=lora_dir
+
+        )
+    else:
+        hconfig['load'] = False
+        trainer = initialize_phisk_trainer3D(
+            base_network=reference_model,
+            hypernetwork_path= None,  # We're not using an old PHISK.
+            dataloader=dataloader,
+            loss_fn=loss_fn,
+            config=config,
+            hconfig=hconfig,
+            lora_dir=lora_dir
+
+        )
     print("Phisk trainer initialized successfully!")
     
     # Train PHISK
-    print("Training phisk control...")
-    trainer.train()
+    print("Training phisk")
+    trainer.train(save_dir=hsave_dir)
 
 if __name__ == '__main__':
     main()

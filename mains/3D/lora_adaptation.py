@@ -10,8 +10,7 @@ from shape import generate_sphere, get_sphere_param
 from utils import create_3d_mesh_mask, load_config
 from Trainer import Trainer3D
 from Dataloader import create_dataloader3D, loader3D
-from eval import evaluate_sphere_estimation
-import yaml
+from eval import evaluate_sphere_estimation, evaluate_custom_estimation
 import trimesh
 import gc
 
@@ -31,6 +30,9 @@ def fibonacci_sphere(n_points, device='cpu', dtype=torch.float32):
 
 
 def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, mesh_param, save_dir, lora_dir):
+        '''
+        Adapt a reference model to a new direction using LoRA scheme and save produced weights in lora_dir
+        '''
         import torch
         from copy import deepcopy
         torch.manual_seed(30 + i)
@@ -52,28 +54,32 @@ def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, m
                 dataloader[key] = value
 
         #Load reference model
-        model = init_model_from_conf(conf_copy).to(config['device'])
-        model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth')) 
+        reference_model = init_model_from_conf(conf_copy).to(config['device'])
+        reference_model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth')) 
+
         #Initialize adapted network              
         if model_name == 'rff':
-            model, optimizer = init_with_Lora_rff(model, conf_copy['lora'], r=12)  #Justification for r=12 is done in the github report.
+            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=12, custom_activation=model[1])  #Justification for r=12 is done in the github report.
         else:  
-            model, optimizer = init_with_Lora(model, conf_copy['lora'], r=12)
+            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=12)
         conf_copy['lora']['optimizer'] = optimizer
 
         #Train LoRA adapted network
         trainer = Trainer3D(model, dataloader, loss_fn, conf_copy)
         trainer.train(lora_dir=lora_dir)
-        model.eval()
-
+        
         #Print performance
-        evaluate_sphere_estimation(model, trainer, conf_copy, mesh_param['R'])
-        del model, trainer, dataloader, conf_copy
+        model.eval()
+        if config['custom_shape']:
+            evaluate_custom_estimation(model, trainer)
+        else:
+            evaluate_sphere_estimation(model, trainer, conf_copy, config['mesh_param']['r'])
+        del reference_model, model, trainer, dataloader, conf_copy
 
 
 def main():
     # Set up argument parsing
-    parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
+    parser = argparse.ArgumentParser(description='Train a reference model (optional), adapt it to J directions')
     parser.add_argument('--model', type=str, required=True, help='The model name to use (e.g., "xxx")')
     parser.add_argument('--retrain', type=bool, default=False, help='True if no pretrained model')
     parser.add_argument('--J', type=int, default=6, help='Number of LoRA adapted directions')
@@ -112,10 +118,10 @@ def main():
     boundary = torch.tensor(boundary, dtype=DTYPE, device=config['device'])
     normals = torch.tensor(normals, dtype=DTYPE, device=config['device'])
 
-    #Retraining if asked
+    #Retraining if needed
     if retrain: 
         print('Train a reference model from scratch')
-        model = init_model_from_conf(config).to(config['device'])
+        reference_model = init_model_from_conf(config).to(config['device'])
         create_dataloader3D(
         mesh=mesh,
         cache_dir='./data_points',
@@ -135,11 +141,14 @@ def main():
             'R': config['mesh_param']['r']
         }
 
-        trainer = Trainer3D(model, dataloader, loss_fn, config)
+        trainer = Trainer3D(reference_model, dataloader, loss_fn, config)
         trainer.train(save_dir=save_dir)
 
         #Print performance
-        evaluate_sphere_estimation(model, trainer, config, config['mesh_param']['r'])
+        if config['custom_shape']:
+            evaluate_custom_estimation(reference_model, trainer)
+        else:
+            evaluate_sphere_estimation(reference_model, trainer, config, config['mesh_param']['r'])
     
     else: 
         create_dataloader3D(
@@ -160,11 +169,11 @@ def main():
         'R': config['mesh_param']['r']
     }
 
-    #Create adapted direction
+    #Creating adapted direction
     directions = fibonacci_sphere(J, device='cpu', dtype=DTYPE)  
     directions = directions.unsqueeze(-1) 
 
-    #training of LoRA adaptaed networks
+    #Training of LoRA adapted networks
     config['lora_train'] = True
 
     multiprocess = False # SET TO TRUE IF MULTIPROCESS LEARNING IS POSSIBLE

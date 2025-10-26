@@ -1,7 +1,7 @@
 import argparse
 import torch
 import torch.nn as nn
-from model import init_model_from_conf
+from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
 from shape import generate_sphere, get_sphere_param
 from Trainer.phisk3D import initialize_phisk_trainer3D  # Import the corrected version
 from Dataloader import create_dataloader3D, loader3D
@@ -11,15 +11,60 @@ import yaml
 import trimesh
 from Trainer.phisk3D import load_directional_model
 
+def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, mesh_param, save_dir, lora_dir):
+        '''
+        Adapt a reference model to a new direction using LoRA scheme and save produced weights in lora_dir
+        '''
+        import torch
+        from copy import deepcopy
+        torch.manual_seed(30 + i)
+
+        # Move direction to GPU and normalize
+        direction = direction.to(config['device'])
+        direction =  direction / torch.linalg.norm(direction)
+        print('Adapted direction' , direction)
+
+        conf_copy = deepcopy(config)
+        conf_copy['direction'] = direction
+
+        # Move dataloader tensors to GPU
+        dataloader = {}
+        for key, value in dataloader_cpu.items():
+            if isinstance(value, torch.Tensor):
+                dataloader[key] = value.to(config['device'])
+            else:
+                dataloader[key] = value
+
+        #Load reference model
+        reference_model = init_model_from_conf(conf_copy).to(config['device'])
+        reference_model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth')) 
+
+        #Initialize adapted network              
+        if model_name == 'rff':
+            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=12, custom_activation=model[1])  #Justification for r=12 is done in the github report.
+        else:  
+            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=12)
+        conf_copy['lora']['optimizer'] = optimizer
+
+        #Train LoRA adapted network
+        trainer = Trainer3D(model, dataloader, loss_fn, conf_copy)
+        trainer.train(lora_dir=lora_dir)
+        
+        #Print performance
+        model.eval()
+        if config['custom_shape']:
+            evaluate_custom_estimation(model, trainer)
+        else:
+            evaluate_sphere_estimation(model, trainer, conf_copy, config['mesh_param']['r'])
+        del reference_model, model, trainer, dataloader, conf_copy
+
 def main():
     # Set up argument parsing
     parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
     parser.add_argument('--model', type=str, required=True, help='The model name or type to use (e.g., "xxx")')
-    parser.add_argument('--preload', type=bool, default=False, help='True if pretrained model')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save file for weights')
     parser.add_argument('--lora_dir', type=str, default='checkpoints/3D/lora/', help='Directory containing LoRA weights')
-    parser.add_argument('--train', type=str, default=True, help='Want to train')
+    parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/3D/phisk/', help='Save directory for PHISK weights')
     args = parser.parse_args()
     
     model_name = args.model

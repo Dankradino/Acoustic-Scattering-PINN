@@ -360,7 +360,6 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
         fig, axs = plt.subplots(3, 2, figsize=(12, 5))
         # Real part plot
         im0 = axs[0, 0].imshow(u_rez, extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0, 0].set_title('XY Real part')
         fig.colorbar(im0, ax=axs[0, 0])
 

@@ -8,9 +8,20 @@ res: 512
 L: 0.5
 pml_size: 0.25
 pml_dampling: 5
+shape : 'circle'
 mesh_param:
   r: 0.2
   center: [0.0, 0.0]
+  length : .25
+  n_elem : 128
+  num_points : 5
+  inner_radius : 0.1
+  outer_radius : 0.3
+  rotation : 0.
+  epsilon : 1e-2
+  ax:  0.15
+  ay: 0.3
+
 
 #Model parameters
 rff: 512
