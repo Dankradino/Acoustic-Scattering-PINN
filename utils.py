@@ -1,6 +1,6 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import yaml
 from scipy.special import hankel1
 from model.lora import LoRALinear
 import hashlib
@@ -358,3 +358,25 @@ def sample_with_blue_noise(boundary, normals, config, epoch):
     )
     
     return boundary_points, normals_points
+
+def load_config(config_path):
+    DTYPE = torch.float # Hard-coded
+    
+    #Load config
+    with open(config_path) as file:
+        config = yaml.safe_load(file)
+
+    #Hyperparameters for experiment
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    DTYPE = torch.float
+
+    direction = torch.tensor([1., 1., 1.],device = device).unsqueeze(1)
+    direction =  direction / torch.linalg.norm(direction)
+    config['direction'] = direction
+    config['device'] = device
+
+    #config['Z'] = torch.tensor([Re(Z), Im(Z)], dtype = DTYPE, device = device)
+    #config['mode'] = 'source' but need to configurate config['source'] corresponding to source coordinate
+
+    mesh_param = config['mesh_param']
+    return config, mesh_param, device, DTYPE

@@ -2,21 +2,14 @@ from .utils import *
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import os
-from utils import generate_grid, save_lora_weights
-from visuals import create_obstacle_patch
-from eval import sound_hard_circle
+from utils import generate_grid
 from torch.utils.tensorboard import SummaryWriter
 from io import BytesIO
 from PIL import Image
 import time
-from model.lora import LoRALinSimple
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
-import os
 import glob
 from collections import OrderedDict
 import re
@@ -28,8 +21,9 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
     def __init__(self, base_network, hypernetwork_path, dataloader, loss_fn, config, hconfig):
         # Architecture components
         self.dim = 3
-        self.hidden_dims = config.get('hidden_dims',[128, 256, 512])   #Maybe 256
+        self.hidden_dims = config.get('hidden_dims',[128, 256, 512])   
         self.T = config.get('T', None)
+        self.num_fourier_features = config.get('num_fourier_features', 64)
         super().__init__(base_network, dataloader, loss_fn, config)
         self.base_network = base_network
         self.hypernetwork_path = hypernetwork_path
@@ -378,26 +372,22 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
 
         # Real part plot
         im2 = axs[1, 0].imshow(u_rey , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1, 0].set_title('XZ Real part')
         fig.colorbar(im2, ax=axs[1, 0])
 
         # Imaginary part plot
         im3 = axs[1,1].imshow(u_imy , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1,1].set_title('XZ Imag part')
         fig.colorbar(im3, ax=axs[1, 1])
         plt.tight_layout()
 
         # Real part plot
         im4 = axs[2, 0].imshow(u_rex , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[2, 0].set_title('YZ Real part')
         fig.colorbar(im4, ax=axs[2, 0])
 
         # Imaginary part plot
         im5 = axs[2,1].imshow(u_imx , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[2,1].set_title('YZ Imag part')
         fig.colorbar(im5, ax=axs[2, 1])
         plt.tight_layout()
@@ -417,7 +407,6 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float() / 255.0 # Add a batch dimension
 
         # Log the image to TensorBoard
-        #self.writer.add_image(f'Scattered_field_pred/{epoch}', image_tensor[0], 0)  # Add the image to TensorBoard
         self.writer.add_image(f'Scattered_field_HRTF/{epoch}', image_tensor[0], 0)
 
 
@@ -429,13 +418,11 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
 
         # Real part plot
         im0 = axs[0].imshow(np.log(u_sc), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0].set_title('Scattered field')
         fig.colorbar(im0, ax=axs[0])
 
         # Imaginary part plot
         im1 = axs[1].imshow(np.log(u_full), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1].set_title('Full field')
         fig.colorbar(im1, ax=axs[1])
 

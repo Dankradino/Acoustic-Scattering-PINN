@@ -1,19 +1,13 @@
 import argparse
-from PIL import Image
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import numpy as np
-import matplotlib.pyplot as plt
 from model import init_model_from_conf
-from torch.autograd import grad
-from utils import green, generate_grid
 from shape import generate_star, generate_square, generate_circle, densify_polygon_with_normals, generate_ellipse
 from Trainer import Trainer2D
 from Dataloader import create_dataloader
-from eval import check_wave_equation, evaluate_green_estimation, evaluate_energy_spectrum, evaluate_circle_estimation, evaluate_multiple_circles_estimation
+from eval import evaluate_circle_estimation
 import yaml
-import time
 
 def main():
     # Set up argument parsing

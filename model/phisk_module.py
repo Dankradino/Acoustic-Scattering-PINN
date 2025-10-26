@@ -25,7 +25,6 @@ class DirectionInterpolationModule(nn.Module):
 
         self.direction_dim = direction_dim
         self.num_loras = num_loras
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.directions = lora_directions
         self.register_buffer("T", T) 
 
@@ -578,16 +577,17 @@ class PhiskModule:
         self.direction_interpolation = DirectionInterpolationModule(
             direction_dim = self.dim,
             num_loras = num_loras,
-            hidden_dim = 64,
+            hidden_dim = 64,   #Useless in current implementation
             lora_directions=self.lora_directions,
-            #T = T,
+            T = self.T,
         ).to(self.device)
         
         # Initialize continuous hypernetwork
         self.continuous_hypernetwork = ContinuousDirectionHyperNetworkCorrector(
             direction_dim = self.dim,
             target_param_size = total_param_size,
-            hidden_dims = self.hidden_dims
+            hidden_dims = self.hidden_dims,
+            num_fourier_features = self.num_fourier_features,
         ).to(self.device)
         
         # Load the saved states

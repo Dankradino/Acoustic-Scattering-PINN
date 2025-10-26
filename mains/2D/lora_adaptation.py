@@ -11,8 +11,7 @@ from Trainer import Trainer2D
 from Dataloader import create_dataloader
 from eval import evaluate_circle_estimation
 import yaml
-import time
-from eval import evaluate_circle_estimation_over_direction, evaluate_circle_estimation_direction
+from eval import evaluate_circle_estimation_direction
 
 def train_direction(i, direction, config, model_name, dataloader, loss_fn, mesh_param):
         import torch
