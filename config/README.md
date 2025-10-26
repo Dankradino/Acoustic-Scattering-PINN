@@ -18,6 +18,7 @@ This configuration file defines parameters for solving acoustic scattering probl
 - **`res`**: Resolution per dimension for evaluation. Total evaluation points is res^d where d is the spatial dimension
   - Example: res=64 gives 64²=4,096 points in 2D or 64³=262,144 points in 3D
 - **`L`**: Half-width of the computational domain [m]. Domain extends from [-L, L] in each dimension
+- **`ref_direction`**: Direction for the reference PINN simulation.
 
 ### Perfectly Matched Layer (PML)
 The PML absorbs outgoing waves at domain boundaries to simulate an infinite domain.

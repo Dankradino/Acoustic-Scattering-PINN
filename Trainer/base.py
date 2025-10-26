@@ -2,9 +2,9 @@ from .utils import *
 import numpy as np
 import torch
 import os
-from utils import generate_grid, save_lora_weights
+from utils import generate_grid, save_lora_weights, sample_with_blue_noise
 from torch.utils.tensorboard import SummaryWriter
-from utils import AcousticScattering3D
+from eval import AcousticScattering3D
 import time
 from utils import sample_with_blue_noise
 from model.lora import * 
@@ -305,6 +305,7 @@ class BaseTrainer3D(LossPINN):
         self.init_solution()
 
     def init_solution(self):
+        DTYPE = torch.float
         if not self.custom_shape: 
             scatterer = AcousticScattering3D(
             sphere_radius = self.dataloader['R'], 
@@ -320,11 +321,10 @@ class BaseTrainer3D(LossPINN):
             self.solution = torch.zeros_like(self.x_grid)
         else: 
             self.x_grid = generate_grid(self.config['L'], self.config['res'], 3, device = self.device)
-            self.eval_grid = np.load('bem_results/evaluation_points.npy')
+            self.eval_grid = np.load('custom_mesh/evaluation_points.npy')
             print('Evaluation grid shape:', self.x_grid.shape)
-            DTYPE = torch.float
             self.eval_grid = torch.tensor(self.eval_grid, device = self.device, dtype = DTYPE)
-            self.solution = np.load('bem_results/scattered_field_realimag.npy')
+            self.solution = np.load('custom_mesh/scattered_field.npy')
             self.solution = torch.tensor(self.solution, device = self.device, dtype = DTYPE)
         self.solution = self.solution.cpu().numpy()
     
