@@ -60,7 +60,6 @@ class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
         batch_size = self.hconfig['adam']['batch_size_dir']
 
         random_directions = self._sample_random_directions(batch_size, ratio = 0.05)
-        #print(random_directions)
         for epoch in range(num_epochs):
             if epoch% config['keeping_time'] == 0:
                 x_sample = next(dataloader_iter).to(self.device)
@@ -190,11 +189,6 @@ class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
                 closure = make_closure(x_sample, boundary_points, normals_points, random_directions)
             total_loss = optimizer.step(closure)
             self.writer.add_scalar('Loss/total', total_loss.item(), self.config['adam']['epochs'])
-            if epoch % 5 == 0:
-                print(f"Epoch {epoch}, Loss: {total_loss.item():.6f}")
-                test_direction = torch.tensor([1.0, 0.0], device=self.device)
-                _, test_weights = self.get_continuous_direction_params(test_direction)
-                print(f"  Test direction [1,0] interpolation weights: {test_weights.detach().cpu().numpy()}")
 
             if epoch% 50 == 0:
                 with torch.no_grad():
@@ -231,7 +225,7 @@ class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
         filename = f'{save_dir}{name}.pth'
         self.save_current(filename)
 
-        print(f'Trained model saved under  {filename}')
+        print(f'Trained PHISK model saved under  {filename}')
 
         #Uncomment the following if you want to do L BFGS Training, warning it requires heavy computational ressources
         # self.fine_tune_direction()          

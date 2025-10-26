@@ -287,7 +287,7 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
         filename = f'{save_dir}{name}.pth'
         self.save_current(filename)
 
-        print(f'Pretrained model saved under  {filename}')
+        print(f'Trained PHISK model saved under  {filename}')
 
         #Uncomment the following if you want to do L BFGS Training, warning it requires heavy computational ressources (experiment show it does not really improve results if you don't use really huge batch size)
         #self.fine_tune_direction()
@@ -297,7 +297,7 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
 
         end =  time.time()
         training_time = end - start
-
+        
         print('Full training time : ', training_time)
         self.writer.close()
         print("Training completed!")

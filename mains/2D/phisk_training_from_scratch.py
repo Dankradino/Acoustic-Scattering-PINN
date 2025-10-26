@@ -149,7 +149,7 @@ def main():
                 i, directioni, config, model_name, dataloader, loss_fn, mesh_param)
         
     print("Direction adaptation with LoRA done.")
-    print("Proceed to do phisk training now.")
+    print("Proceed to train phisk now.")
     dataloader = {
             'adam': create_dataloader(polygon, hconfig['adam'], config['L']+config['pml_size']),
             'fine': create_dataloader(polygon, hconfig['fine'], config['L']+config['pml_size']),

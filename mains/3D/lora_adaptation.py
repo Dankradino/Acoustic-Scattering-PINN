@@ -15,7 +15,7 @@ import trimesh
 import gc
 
 
-def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, mesh_param, save_dir, lora_dir):
+def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir):
         '''
         Adapt a reference model to a new direction using LoRA scheme and save produced weights in lora_dir
         '''
@@ -155,7 +155,7 @@ def main():
         'R': config['mesh_param']['r']
     }
 
-    #Creating adapted direction
+    #Creating directions to adapt to
     directions = fibonacci_sphere(J, device='cpu', dtype=DTYPE)  
     directions = directions.unsqueeze(-1) 
 
@@ -169,7 +169,7 @@ def main():
         for i, direction in enumerate(directions):
             p = mp.Process(
                 target=train_direction,
-                args=(i, direction, config, model_name, dataloader_cpu, loss_fn, config['mesh_param'], save_dir, lora_dir)
+                args=(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
             )
             p.start()
             processes.append(p)
@@ -179,7 +179,7 @@ def main():
     else :
         for i, direction in enumerate(directions):
             train_direction(
-                i, direction, config, model_name, dataloader_cpu, loss_fn, config['mesh_param'], save_dir, lora_dir)
+                i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
             
             gc.collect()               # clear unused Python objects
             torch.cuda.empty_cache()   # release cached CUDA memory

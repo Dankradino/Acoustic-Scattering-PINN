@@ -1,17 +1,21 @@
+import multiprocessing as mp
+mp.set_start_method('spawn', force=True)
+
 import argparse
 import torch
 import torch.nn as nn
 from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
 from shape import generate_sphere, get_sphere_param
-from Trainer.phisk3D import initialize_phisk_trainer3D  # Import the corrected version
+from Trainer import Trainer3D
+from Trainer.phisk3D import initialize_phisk_trainer3D 
 from Dataloader import create_dataloader3D, loader3D
-from utils import create_3d_mesh_mask
-from eval import evaluate_sphere_estimation, evaluate_sphere_estimation_over_direction
+from utils import create_3d_mesh_mask, load_config, fibonacci_sphere
+from eval import evaluate_sphere_estimation, evaluate_custom_estimation
 import yaml
 import trimesh
-from Trainer.phisk3D import load_directional_model
+import gc
 
-def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, mesh_param, save_dir, lora_dir):
+def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir):
         '''
         Adapt a reference model to a new direction using LoRA scheme and save produced weights in lora_dir
         '''
@@ -41,9 +45,9 @@ def train_direction(i, direction, config, model_name, dataloader_cpu, loss_fn, m
 
         #Initialize adapted network              
         if model_name == 'rff':
-            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=12, custom_activation=model[1])  #Justification for r=12 is done in the github report.
+            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=config['lora_r'], custom_activation=model[1])  #Justification for r=12 is done in the github report.
         else:  
-            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=12)
+            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=config['lora_r'])
         conf_copy['lora']['optimizer'] = optimizer
 
         #Train LoRA adapted network
@@ -62,91 +66,61 @@ def main():
     # Set up argument parsing
     parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
     parser.add_argument('--model', type=str, required=True, help='The model name or type to use (e.g., "xxx")')
+    parser.add_argument('--J', type=int, default=6, help='Number of LoRA adapted directions')
     parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save file for weights')
     parser.add_argument('--lora_dir', type=str, default='checkpoints/3D/lora/', help='Directory containing LoRA weights')
     parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/3D/phisk/', help='Save directory for PHISK weights')
+    parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular circle defined by mesh_param')
     args = parser.parse_args()
     
     model_name = args.model
-    preload = args.preload
-    train = args.train
     save_dir = args.save_dir
     lora_dir = args.save_dir
-    
+    hsave_dir = args.hsave_dir
+    J = args.J
+    mesh_path = args.mesh_path
     torch.manual_seed(30)
 
-    with open(f"config/3D/scattering/config_{model_name}.yaml") as file:
-        config = yaml.safe_load(file)
+    #Training loss
+    loss_fn = nn.MSELoss()
+
+    #Load config
+    config_path = f"config/3D/scattering/config_{model_name}.yaml"
+    config, DTYPE = load_config(config_path)
+    config['preload'] = False
 
     with open(f"config/3D/scattering/hconfig.yaml") as file:
         hconfig = yaml.safe_load(file)
 
-    # Hyperparameters for experiment
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    config['device'] = device  # Make sure device is in config
-    config['scale'] = 1
-    hconfig['adam']['batch_size'] = 4096
-    hconfig['fine']['batch_size'] = 4096
 
-    # Create 2D grid of x points
-    L = config['L']
-    Lpml = config['pml_size']
-    fake_bd = L + Lpml
 
-    direction = torch.tensor([1., 1., 1.], device=device).unsqueeze(1)
-    direction = direction / torch.linalg.norm(direction)
-    config['direction'] = direction
+    #Load mesh
+    if mesh_path is None:
+        config['custom_shape'] = False
+        mesh_path = generate_sphere(radius=config['mesh_param']['r'], subdivisions=8, center = config['mesh_param']['center'])
+        mesh =  trimesh.load(mesh_path)
+        boundary , normals = get_sphere_param(mesh.vertices)
+    else :
+        config['custom_shape'] = True
+        mesh =  trimesh.load(mesh_path)
+        normals = mesh.vertex_normals
+    print(f"Mesh: {mesh.vertices.shape[0]} vertices, {mesh.faces.shape[0]} faces")
     
-    mesh_param = {
-        'length': 1.0,
-        'n_elem': 128,
-        'R': 0.2,
-        'cx': 0,
-        'cy': 0,
-        'epsilon': 1e-2,
-        'num_points': 5,
-        'inner_radius': 0.2,
-        'outer_radius': 0.5,
-        'center': (0., 0.),
-        'rotation': 0.,
-    }
-    config['R'] = 0.2
-    DTYPE = torch.float
-    
-    # SIREN model
-    reference_model = init_model_from_conf(config).to(device)
-    print('Preloading weights for reference model')
-    reference_model.load_state_dict(torch.load(f'checkpoints/scattering3D/{model_name}.pth'))
-    print('Done!')
+    boundary = torch.tensor(boundary, dtype=DTYPE, device=config['device'])
+    normals = torch.tensor(normals, dtype=DTYPE, device=config['device'])
 
-    config['preload'] = preload
-    loss_fn = nn.MSELoss()
+    print('Train a reference model from scratch')
+    reference_model = init_model_from_conf(config).to(config['device'])
 
-    # Generate Circle Polygon
-    mesh_path = generate_sphere(radius=mesh_param['R'], subdivisions=8)
-    mesh =  trimesh.load(mesh_path)
-
-    boundary , normals = get_sphere_param(mesh.vertices)
-    boundary = torch.tensor(boundary, dtype=DTYPE, device=device)
-    normals = torch.tensor(normals, dtype=DTYPE, device=device)
-
-    hconfig['adam']['epochs'] = 100000
-    config['adam'] = hconfig['adam']
-    config['fine'] = hconfig['fine']
-
+    #Create training points
     create_dataloader3D(
     mesh=mesh,
     cache_dir='./data_points',
     config=config,
-    pml_boundary=fake_bd,
+    pml_boundary=config['L']+config['pml_size'],
     method='spherical_shell'
     )
-    points = loader3D(config, cache_dir = './data_points')
-
-    if preload : 
-        hconfig['adam']['batch_size'] = 1
-        hconfig['fine']['batch_size'] = 8192 * 2
-        hconfig['fine']['batch_boundary'] = 8192 * 2 
+    points = loader3D(config, cache_dir='./data_points')
 
     dataloader = {
         'adam' : points['adam'],
@@ -155,30 +129,61 @@ def main():
         'boundary' : boundary,
         'polygon' : mesh.vertices,
         'mesh_mask': create_3d_mesh_mask(config, mesh),
-        'R' : mesh_param['R'],
-
+        'R': config['mesh_param']['r']
     }
 
-    # Check if LoRA directory exists and has files
-    import os
-    if not os.path.exists(lora_dir):
-        print(f"Warning: LoRA directory {lora_dir} does not exist!")
-        print("Please make sure you have trained LoRA weights for different directions.")
-        return
-    
-    lora_files = [f for f in os.listdir(lora_dir) if f.endswith('.pth')]
-    if not lora_files:
-        print(f"Warning: No .pth files found in {lora_dir}")
-        print("Please make sure you have trained LoRA weights for different directions.")
-        return
-    
-    print(f"Found {len(lora_files)} LoRA files: {lora_files}")
+    trainer = Trainer3D(reference_model, dataloader, loss_fn, config)
+    trainer.train(save_dir=save_dir)
 
-    hconfig['load'] = True
-    # Initialize the enhanced trainer
-    trainer = initialize_enhanced_trainer(
+
+    #LoRA PINN framework
+    dataloader_cpu = {
+        'lora' : points['fine'],    #N_points[fine] > N_points[lora] so we ccan reuse the same one, you can regenerate points if you want
+        'normals' : normals.cpu(),
+        'boundary' : boundary.cpu(),
+        'polygon' : mesh.vertices,
+        'mesh_mask': create_3d_mesh_mask(config, mesh),
+        'R': config['mesh_param']['r']
+    }
+
+    #Creating direction to adapt to
+    directions = fibonacci_sphere(J, device='cpu', dtype=DTYPE)  
+    directions = directions.unsqueeze(-1) 
+
+    #Training of LoRA adapted networks
+    config['lora_train'] = True
+    config['lora_r'] = hconfig['r']
+    print(f'Now adapting it to {J} directions with LoRA')
+    multiprocess = False # SET TO TRUE IF MULTIPROCESS LEARNING IS POSSIBLE
+    if multiprocess : 
+        processes = []
+
+        for i, direction in enumerate(directions):
+            p = mp.Process(
+                target=train_direction,
+                args=(i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
+            )
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+    else :
+        for i, direction in enumerate(directions):
+            train_direction(
+                i, direction, config, model_name, dataloader_cpu, loss_fn, save_dir, lora_dir)
+            
+            gc.collect()               # clear unused Python objects
+            torch.cuda.empty_cache()   # release cached CUDA memory
+    print("Direction adaptation with LoRA done.")
+    print("Proceed to train phisk now.")
+
+
+    #PHISK Trainer initialization
+    hconfig['load'] = False
+    trainer = initialize_phisk_trainer3D(
         base_network=reference_model,
-        hypernetwork_path= f'checkpoints/hyper3D/{model_name}_pre_9900.pth', #None,  # We're not using the old hypernetwork
+        hypernetwork_path=None,  # We're not using an old PHISK
         dataloader=dataloader,
         loss_fn=loss_fn,
         config=config,
@@ -186,30 +191,32 @@ def main():
         lora_dir=lora_dir
     )
 
-    if preload : 
-        trainer.load_hypernetwork_checkpoint(f'checkpoints/enhanced_trainer_{model_name}_pre.pth')
-    print("Enhanced trainer initialized successfully!")
-    
-    # Train the continuous direction control system
-    print(train)
-    if train:
-        print('SFSDFGSERSGSFSERFSFSGFSEF')
-        print("Training continuous direction control...")
+    #PHISK training points creation
+    config['adam'] = hconfig['adam']
+    config['fine'] = hconfig['fine']   #IF NECESSARY AS L BFGS phase is not baseline for PHISK.
 
-        trainer.train()
-            
-
-    
-    print(f"Enhanced trainer components saved to checkpoints/enhanced_trainer_{model_name}.pth")
-
-    model = load_directional_model(
-    base_network=reference_model,
-    lora_dir=lora_dir, 
-    checkpoint_path=f'checkpoints/enhanced_trainer_{model_name}.pth',
+    create_dataloader3D(
+    mesh=mesh,
+    cache_dir='./data_points',
     config=config,
-    hconfig=hconfig
-    )   
-    evaluate_sphere_estimation_over_direction(model, config, mesh_param['R'])
+    pml_boundary=config['L']+config['pml_size'],
+    method='spherical_shell'
+    )
+    points = loader3D(config, cache_dir='./data_points')
+
+    dataloader = {
+        'adam' : points['adam'],
+        'fine' : points['fine'],
+        'normals' : normals,
+        'boundary' : boundary,
+        'polygon' : mesh.vertices,
+        'mesh_mask': create_3d_mesh_mask(config, mesh),
+        'R': config['mesh_param']['r']
+    }
+
+
+    print("Training PHISK")
+    trainer.train(save_dir = hsave_dir)
 
 if __name__ == '__main__':
     main()

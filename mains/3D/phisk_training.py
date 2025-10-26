@@ -123,11 +123,13 @@ def main():
             lora_dir=lora_dir
 
         )
-    print("Phisk trainer initialized successfully!")
+    print("Phisk Trainer initialized successfully!")
     
     # Train PHISK
     print("Training phisk")
     trainer.train(save_dir=hsave_dir)
+    print(f"Training done and saved under {hsave_dir}{model_name}.pth")
+
 
 if __name__ == '__main__':
     main()
