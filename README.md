@@ -66,6 +66,7 @@ Configure the following acoustic properties in your config file:
 #### Supported Shapes
 
 **2D**: Circle, ellipse, star (custom_shape can be easily adapted).
+
 **3D**: Sphere, head model (SONICOM Dataset Engel and al. 2023), and custom meshes.
 
 #### Using Custom Meshes
