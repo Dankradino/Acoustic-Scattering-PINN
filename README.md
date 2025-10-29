@@ -92,7 +92,7 @@ python mains/3D/phisk_training_from_scratch.py
 A specialized training pipeline for the SONICOM dataset is available:
 
 ```bash
-python mains/hrtf_training.py
+python mains/hrtf/hrtf_training.py
 ```
 
 
@@ -100,13 +100,47 @@ python mains/hrtf_training.py
 
 ```
 Acoustic-Scattering-PINN/
-├── config/           # Configuration files
+├── checkpoints/      # Checkpoints for the different model     
+│   ├── 2D/
+│   │   ├── /scattering     # Reference PINN weights
+│   │   ├── /LoRA           # LoRA decomposition weights
+│   │   ├── /hyper          # PHISK weights
+│   ├── 3D/
+│   │   ├── ...
+│   ├── hrtf/
+│   │   ├── ...
+├── config/           # Configuration files.
 │   ├── 2D/
 │   └── 3D/
+├── custom_mesh/           
+│   ├── evaluation_points.npy    # Model evaluation points.
+│   ├── scattered_field.npy      # Groundtruth comparison.
+├── data_points/                 # Data training points storage. 
+├── Dataloader/           
+│   ├── dataloader2D.py      # 2D training points generation and their loader.
+│   ├── dataloader3D.py      # 3D training points generation and their loader.
+│   └── sofa_processing.py   # HRTF Information loader
+├── model/           
+│   ├── activation.py         # Activations functions
+│   ├── base.py               # Baseline PINN model structure.
+│   └── lora_interp_loader.py # Loader for LoRA Interpolation (no corrective weights).
+│   └── lora.py               # LoRA model adaptation scripts.
+│   └── phisk_loader.py       # Loader of Phisk module.
+│   └── phisk_module.py       # PHISK Hypernetwork component model.
+│   └── rff.py                # Random Fourier Features based network.
+│   └── siren.y               # SIREN based network.
+├── SONICOM/          # Example head for HRTF   
 ├── mains/            # Training scripts
 │   ├── 2D/
 │   ├── 3D/
-│   └── hrtf_training.py
+│   └── hrtf/
+├── Trainer/           
+│   ├── base.py          # Baseline structure shared accross trainers (Losses ...)
+│   ├── conditioned_trainer.py   # Trainer of the condition PINN (see report)
+│   └── phisk2D.py               # Trainer for phisk in 2D.
+│   └── phisk3D.py               # Trainer for phisk in 3D.
+│   └── reference2D.py           # Trainer for reference PINN and LoRA PINN in 2D.
+│   └── reference3D.py           # Trainer for reference PINN and LoRA PINN in 3D.
 ├── environment.yaml  # Conda environment specification
 └── README.md
 ```
@@ -121,7 +155,7 @@ of the Audio Engineering Society, 71:241–253, 2023.
 ## Coming Soon
 
 - Interactive Jupyter notebooks demonstrating model loading and testing.
-
+- Correct HRTF checkpoints format.
 
 ## Contact
 
