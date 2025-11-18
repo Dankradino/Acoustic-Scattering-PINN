@@ -2,11 +2,9 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import generate_grid, green
-from Trainer.utils import compl_mul, compl_div
+from utils import generate_grid
+from Trainer.utils import compl_mul
 from scipy.special import hankel1,jv, spherical_jn, spherical_yn, sph_harm
-from scipy.spatial.distance import cdist
-from mpl_toolkits.mplot3d import Axes3D
 import trimesh
 
 
@@ -129,7 +127,7 @@ def sound_hard_circle(config, points, rad=0.5, center = np.array([0., 0.])):
     '''
     Analytical solution for the circle sound-hard scattering problem.
     '''
-    k = config['frequency'] * 2 * np.pi
+    k = config['frequency'] * 2 * np.pi / config['celerity']  # wavenumber
     a = rad
     points = points.cpu().numpy()
 
@@ -193,7 +191,8 @@ def evaluate_circle_estimation(model, config, R, display = True):
     L = config['L']
     res = config['res']
     x_grid = generate_grid(L, res, 2, device=model.device)
-    mask = (x_grid[:,0]-config['center'][0])**2 + (x_grid[:,1]-config['center'][1])**2 > config['R']**2
+    center = torch.tensor(config['mesh_param']['center'], dtype = x_grid[0].dtype, device = config['device'])
+    mask = (x_grid[:,0]-center[0])**2 + (x_grid[:,1]-center[1])**2 > config['mesh_param']['r']**2
     print('mask shape :' ,mask.shape)
     k = 2 * np.pi * config['frequency'] / config['celerity']  # wavenumber
     with torch.no_grad():
@@ -201,7 +200,7 @@ def evaluate_circle_estimation(model, config, R, display = True):
         prediction = torch.zeros((res**2,2), device = config['device'])
         target = torch.zeros((res**2,2), device = config['device'], dtype = torch.double)
         prediction[mask,:] = model(x_grid[mask,:])
-        target[mask,:] = sound_hard_circle(config, x_grid[mask,:] - config['center'], R, config['center'].cpu().numpy())
+        target[mask,:] = sound_hard_circle(config, x_grid[mask,:] - center, R, center.cpu().numpy())
 
     nmse_real = nmse(prediction[: ,0], target[: ,0])
     nmse_imag = nmse(prediction[: ,1], target[: ,1])
@@ -246,7 +245,6 @@ def evaluate_circle_estimation(model, config, R, display = True):
         plt.savefig("siren_error_plot.eps", dpi=300, bbox_inches='tight')
         plt.show()
     return nmse_real, nmse_imag, cos_sim_real, cos_sim_imag
-
 
 def evaluate_circle_estimation_direction(model, config, R, plot=True,  num_dir = 90):
     """

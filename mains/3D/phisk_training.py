@@ -103,7 +103,7 @@ def main():
     if preload:
         hconfig['load'] = True  #True if we load an old PHISK.
         trainer = initialize_phisk_trainer3D(
-            base_network=reference_model,
+            reference_network=reference_model,
             hypernetwork_path= hsave_dir,  # We're using a trained (at least partially) PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,
@@ -115,7 +115,7 @@ def main():
     else:
         hconfig['load'] = False
         trainer = initialize_phisk_trainer3D(
-            base_network=reference_model,
+            reference_network=reference_model,
             hypernetwork_path= None,  # We're not using an old PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,

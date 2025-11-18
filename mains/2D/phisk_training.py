@@ -96,8 +96,8 @@ def main():
     if preload: 
         hconfig['load'] = True #True if we load an old PHISK.
         trainer = initialize_phisk_trainer2D(
-            base_network=reference_model,
-            hypernetwork=hsave_dir,  # We're using a trained (at least partially) PHISK.
+            reference_network=reference_model,
+            hypernetwork=f'{hsave_dir}{model_name}.pth',  # We're using a trained (at least partially) PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,
             config=config,
@@ -107,7 +107,7 @@ def main():
     else : 
         hconfig['load'] = False
         trainer = initialize_phisk_trainer2D(
-            base_network=reference_model,
+            reference_network=reference_model,
             hypernetwork=None,  # We're not using an old PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,
@@ -122,7 +122,7 @@ def main():
 
     #Loading PHISK
     phisk = load_directional_model(
-    base_network=reference_model,
+    reference_network=reference_model,
     lora_dir=lora_dir, 
     checkpoint_path=f'{hsave_dir}{model_name}.pth',
     config=config,

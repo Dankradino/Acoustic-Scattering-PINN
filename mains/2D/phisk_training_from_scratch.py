@@ -12,7 +12,7 @@ from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff, load
 from shape import generate_star, generate_square, generate_circle, generate_ellipse, densify_polygon_with_normals
 from Trainer import Trainer2D
 from Dataloader import create_dataloader
-from eval import evaluate_circle_estimation_direction
+from eval import evaluate_circle_estimation_direction, evaluate_circle_estimation
 
 def train_direction(i, direction, config, model_name, dataloader, loss_fn, mesh_param, save_dir, lora_dir):
         '''
@@ -159,7 +159,7 @@ def main():
         }
     
     trainer = initialize_phisk_trainer2D(
-        base_network=reference_model,
+        reference_network=reference_model,
         hypernetwork_path=None, # We're not using an old PHISK
         dataloader=dataloader,
         loss_fn=loss_fn,
@@ -174,7 +174,7 @@ def main():
 
     print(f"PHISK saved to checkpoints/{hsave_dir}{model_name}.pth")
     model = load_directional_model(
-    base_network=reference_model,
+    reference_network=reference_model,
     lora_dir=lora_dir, 
     checkpoint_path=f'checkpoints/{hsave_dir}{model_name}.pth',
     config=config,
