@@ -72,6 +72,7 @@ def main():
     #Load config
     config_path = f"config/2D/scattering/config.yaml"
     config, DTYPE = load_config(config_path)
+    config['model'] = model_name
 
     with open(f"config/2D/scattering/hconfig.yaml") as file:
         hconfig = yaml.safe_load(file)

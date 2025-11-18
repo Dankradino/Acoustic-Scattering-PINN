@@ -28,6 +28,7 @@ def main():
     #Load config
     config_path = f"config/2D/scattering/config.yaml"
     config, DTYPE = load_config(config_path)
+    config['model'] = model_name
 
 
     # Scatterer shape definition

@@ -87,6 +87,7 @@ def main():
     #Load config
     config_path = f"config/3D/scattering/config_{model_name}.yaml"
     config, DTYPE = load_config(config_path)
+    config['model'] = model_name
     config['preload'] = False
 
     with open(f"config/3D/scattering/hconfig.yaml") as file:
