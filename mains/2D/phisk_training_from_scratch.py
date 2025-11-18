@@ -2,6 +2,7 @@ import multiprocessing as mp
 mp.set_start_method('spawn', force=True)
 
 import argparse
+import yaml
 import torch
 import torch.nn as nn
 import numpy as np
@@ -11,8 +12,6 @@ from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff, load
 from shape import generate_star, generate_square, generate_circle, generate_ellipse, densify_polygon_with_normals
 from Trainer import Trainer2D
 from Dataloader import create_dataloader
-from eval import evaluate_circle_estimation
-import yaml
 from eval import evaluate_circle_estimation_direction
 
 def train_direction(i, direction, config, model_name, dataloader, loss_fn, mesh_param, save_dir, lora_dir):
