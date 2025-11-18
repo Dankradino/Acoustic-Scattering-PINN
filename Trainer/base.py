@@ -214,9 +214,9 @@ class BaseTrainer2D(LossPINN):
         '''
         Initialize the solution for a circular shape defined by (center, R)
         '''
-        self.tar = torch.zeros((self.res**2,2), device = self.device, dtype = self.config['DTYPE'])
+        self.tar = torch.zeros((self.res**2,2), device = self.device, dtype = torch.double)
         if not self.custom_shape:
-            center = torch.tensor(self.config['mesh_param']['center'], dtype = self.config['DTYPE'], device = self.config['device'])
+            center = torch.tensor(self.config['mesh_param']['center'], dtype = torch.double, device = self.config['device'])
             r = self.config['mesh_param']['r']
             mask = (self.x_grid[:,0]-center[0])**2 + (self.x_grid[:,1]-center[1])**2 > r**2
             self.tar[mask,:] = sound_hard_circle(self.config, self.x_grid[mask,:] - center, r)

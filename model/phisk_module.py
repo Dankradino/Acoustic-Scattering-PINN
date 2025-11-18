@@ -540,7 +540,7 @@ class PhiskModule:
         torch.save({
             'interpolation_state': self.direction_interpolation.T, #self.direction_interpolation.state_dict(),   #Save only temperature but if you want to change simple interpolation by a neural interpolation it can be adaapted
             'hypernetwork_state': self.continuous_hypernetwork.state_dict(),
-            'fourier_features_B': self.continuous_hypernetwork.B,  # ADD THIS
+            'fourier_features_B': self.continuous_hypernetwork.B,  
             'lora_directions': self.lora_directions,
             'param_shapes': self.param_shapes,
             'lora_states': self.lora_states
@@ -582,12 +582,13 @@ class PhiskModule:
             T = self.T,
         ).to(self.device)
         
+        num_fourier_features = checkpoint['fourier_features_B'].shape[1] 
         # Initialize continuous hypernetwork
         self.continuous_hypernetwork = ContinuousDirectionHyperNetworkCorrector(
             direction_dim = self.dim,
             target_param_size = total_param_size,
             hidden_dims = self.hidden_dims,
-            num_fourier_features = self.num_fourier_features,
+            num_fourier_features = num_fourier_features,
         ).to(self.device)
         
         # Load the saved states

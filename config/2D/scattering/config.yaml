@@ -24,7 +24,7 @@ mesh_param:
 
 
 #Model parameters
-rff: 512
+rff: 256
 input_dim: 2
 hidden_dim: 64
 output_dim: 2

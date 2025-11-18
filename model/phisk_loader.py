@@ -13,12 +13,12 @@ class DirectionalHyperNetwork(nn.Module):
     """
     Simple wrapper that makes the hypernetwork callable like model(points, direction)
     """
-    def __init__(self, base_network, checkpoint_path, config, hconfig):
+    def __init__(self, reference_network, checkpoint_path, config, hconfig):
         super().__init__()
         
         # Initialize the trainer (this contains all the hypernetwork logic)
         self.trainer = PHISK_Trainer2D(
-            base_network=base_network,
+            reference_network=reference_network,
             hypernetwork_path=checkpoint_path,
             dataloader={},  # Empty for inference
             loss_fn=nn.MSELoss(),  # Dummy loss
@@ -66,12 +66,12 @@ class DirectionalHyperNetwork(nn.Module):
         
         return output
 
-def load_directional_model(base_network, checkpoint_path, config, hconfig):
+def load_directional_model(reference_network, checkpoint_path, config, hconfig):
     """
     Convenience function to load a directional hypernetwork model
     
     Args:
-        base_network: Your base SIREN network
+        reference_network: Your base SIREN network
         lora_dir: Directory containing LoRA weights  
         checkpoint_path: Path to trained hypernetwork checkpoint
         config: Your config dict
@@ -80,4 +80,4 @@ def load_directional_model(base_network, checkpoint_path, config, hconfig):
     Returns:
         DirectionalHyperNetwork that can be called as model(points, direction)
     """
-    return DirectionalHyperNetwork(base_network, checkpoint_path, config, hconfig)
+    return DirectionalHyperNetwork(reference_network, checkpoint_path, config, hconfig)
