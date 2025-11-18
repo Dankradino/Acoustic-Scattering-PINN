@@ -424,7 +424,6 @@ def load_config(config_path):
 
     #Hyperparameters for experiment
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    DTYPE = torch.float
 
     direction = torch.tensor(config['ref_direction'], device = device).unsqueeze(1)
     direction =  direction / torch.linalg.norm(direction)
