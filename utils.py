@@ -426,7 +426,7 @@ def load_config(config_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     DTYPE = torch.float
 
-    direction = torch.tensor([1., 1., 1.],device = device).unsqueeze(1)
+    direction = torch.tensor(config['ref_direction'], device = device).unsqueeze(1)
     direction =  direction / torch.linalg.norm(direction)
     config['direction'] = direction
     config['device'] = device
@@ -434,5 +434,4 @@ def load_config(config_path):
     #config['Z'] = torch.tensor([Re(Z), Im(Z)], dtype = DTYPE, device = device)
     #config['mode'] = 'source' but need to configurate config['source'] corresponding to source coordinate
 
-    mesh_param = config['mesh_param']
-    return config, mesh_param, device, DTYPE
+    return config, DTYPE
