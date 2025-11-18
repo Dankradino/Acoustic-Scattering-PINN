@@ -8,7 +8,6 @@ from shape import generate_star, generate_square, generate_circle, generate_elli
 from Trainer import Trainer2D
 from Dataloader import create_dataloader
 from eval import evaluate_circle_estimation
-import yaml
 
 def main():
     # Set up argument parsing

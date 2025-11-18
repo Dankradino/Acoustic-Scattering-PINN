@@ -7,7 +7,6 @@ from Trainer import Trainer3D
 from Dataloader import create_dataloader3D, loader3D
 from utils import create_3d_mesh_mask, load_config
 from eval import evaluate_sphere_estimation, evaluate_custom_estimation
-import yaml
 import trimesh
 
 '''

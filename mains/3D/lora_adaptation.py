@@ -4,7 +4,6 @@ mp.set_start_method('spawn', force=True)
 import argparse
 import torch
 import torch.nn as nn
-import numpy as np
 from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
 from shape import generate_sphere, get_sphere_param
 from utils import create_3d_mesh_mask, load_config, fibonacci_sphere
