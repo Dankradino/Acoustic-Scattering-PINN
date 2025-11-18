@@ -2,16 +2,12 @@ from .utils import *
 import numpy as np
 import torch
 import os
-from utils import generate_grid, save_lora_weights, sample_with_blue_noise
-from torch.utils.tensorboard import SummaryWriter
-from eval import AcousticScattering3D
+from utils import generate_grid
+from eval import AcousticScattering3D, sound_hard_circle
 import time
-from utils import sample_with_blue_noise
 from model.lora import * 
 import time
 from abc import ABC, abstractmethod
-from eval import sound_hard_circle
-
 
 """
 This module contains bases class for Trainer for 2D and 3D scattering problem.
@@ -218,10 +214,12 @@ class BaseTrainer2D(LossPINN):
         '''
         Initialize the solution for a circular shape defined by (center, R)
         '''
-        self.tar = torch.zeros((self.res**2,2), device = self.device, dtype = torch.double)
+        self.tar = torch.zeros((self.res**2,2), device = self.device, dtype = self.config['DTYPE'])
         if not self.custom_shape:
-            mask = (self.x_grid[:,0]-self.config['center'][0])**2 + (self.x_grid[:,1]-self.config['center'][1])**2 > self.config['R']**2
-            self.tar[mask,:] = sound_hard_circle(self.config, self.x_grid[mask,:] - self.config['center'], self.config['R'])
+            center = torch.tensor(self.config['mesh_param']['center'], dtype = self.config['DTYPE'], device = self.config['device'])
+            r = self.config['mesh_param']['r']
+            mask = (self.x_grid[:,0]-center[0])**2 + (self.x_grid[:,1]-center[1])**2 > r**2
+            self.tar[mask,:] = sound_hard_circle(self.config, self.x_grid[mask,:] - center, r)
     
     @abstractmethod
     def train(self):

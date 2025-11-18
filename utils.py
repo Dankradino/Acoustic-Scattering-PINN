@@ -429,7 +429,7 @@ def load_config(config_path):
     direction =  direction / torch.linalg.norm(direction)
     config['direction'] = direction
     config['device'] = device
-
+    config['DTYPE'] = DTYPE
     #config['Z'] = torch.tensor([Re(Z), Im(Z)], dtype = DTYPE, device = device)
     #config['mode'] = 'source' but need to configurate config['source'] corresponding to source coordinate
 
