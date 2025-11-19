@@ -77,7 +77,8 @@ class LoRAForward:
             direction_dim=2,
             num_loras=len(self.lora_states),
             hidden_dim=64,
-            lora_directions=self.lora_directions
+            lora_directions=self.lora_directions,
+            T = self.T
         ).to(self.device)
         
         # Get parameter shapes from first LoRA state
