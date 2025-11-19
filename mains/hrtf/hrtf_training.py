@@ -228,7 +228,7 @@ def main():
     #PHISK Trainer initialization
     hconfig['load'] = False
     trainer = initialize_phisk_trainer3D(
-        base_network=reference_model,
+        reference_network=reference_model,
         hypernetwork_path=None,  # We're not using an old PHISK
         dataloader=dataloader,
         loss_fn=loss_fn,

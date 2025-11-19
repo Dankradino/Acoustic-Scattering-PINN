@@ -16,9 +16,9 @@ without any corrective hypernetwork
 
 from model.phisk_module import DirectionInterpolationModule
 class LoRAForward:
-    def __init__(self, base_network, config, T = None):
+    def __init__(self, reference_network, config, T = None):
         # Architecture components
-        self.base_network = base_network
+        self.reference_network = reference_network
         self.config = config
         self.device = config['device']
         self.T = T
@@ -342,22 +342,22 @@ class LoRAForward:
         coords = coords.clone().detach().requires_grad_(diff)
         
         # Access the network structure
-        if hasattr(self.base_network, 'siren'):
-            if hasattr(self.base_network.siren, 'net'):
-                siren_net = self.base_network.siren.net
+        if hasattr(self.reference_network, 'siren'):
+            if hasattr(self.reference_network.siren, 'net'):
+                siren_net = self.reference_network.siren.net
             else:
-                siren_net = self.base_network.siren
-        elif hasattr(self.base_network, 'net'):
-            siren_net = self.base_network.net
+                siren_net = self.reference_network.siren
+        elif hasattr(self.reference_network, 'net'):
+            siren_net = self.reference_network.net
         else:
-            raise AttributeError("Cannot find network structure in base_network")
+            raise AttributeError("Cannot find network structure in reference_network")
         
         # Get all available LoRA parameter keys
         all_keys = self._get_all_param_keys(lora_params)
         layer_keys = [key for key in all_keys if 'lora_A' in key]
         
-        if hasattr(self.base_network, 'fourier_feature_mapping'):
-            out = self.base_network.fourier_feature_mapping(coords)
+        if hasattr(self.reference_network, 'fourier_feature_mapping'):
+            out = self.reference_network.fourier_feature_mapping(coords)
         else:
             out = coords
         
@@ -448,12 +448,12 @@ class LoRAInterpolator(torch.nn.Module):
     """
     Simple wrapper that makes the interpolation callable like model(points, direction)
     """
-    def __init__(self, base_network, lora_dir, config, T):
+    def __init__(self, reference_network, lora_dir, config, T):
         super().__init__()
         
         # Initialize the lora_interpolator
         self.lora_interpolator = LoRAForward(
-            base_network=base_network,
+            reference_network=reference_network,
             config=config,
             T = T,
         )
@@ -499,16 +499,16 @@ class LoRAInterpolator(torch.nn.Module):
         
         return output
     
-def load_interpolated_model(base_network, lora_dir, config, T = None):
+def load_interpolated_model(reference_network, lora_dir, config, T = None):
     """
     Convenience function to load a directional hypernetwork model
     
     Args:
-        base_network: Your base SIREN network
+        reference_network: Your base SIREN network
         lora_dir: Directory containing LoRA weights  
         config: Your config dict
         
     Returns:
         DirectionalHyperNetwork that can be called as model(points, direction)
     """
-    return LoRAInterpolator(base_network, lora_dir, config, T = T)
+    return LoRAInterpolator(reference_network, lora_dir, config, T = T)
