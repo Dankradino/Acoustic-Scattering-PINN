@@ -460,7 +460,7 @@ class PhiskModule:
         return param_dict
 
     def forward_with_lora_params(self, coords, lora_params, diff=False):
-        """Forward pass through base network with LoRA parameters applied"""
+        """Forward pass through reference network with LoRA parameters applied"""
         coords = coords.clone().detach().requires_grad_(diff)
         
         # Access the network structure

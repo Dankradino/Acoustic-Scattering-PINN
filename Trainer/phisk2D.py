@@ -29,6 +29,7 @@ class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
         super().__init__(reference_network, dataloader, loss_fn, config)
         # Architecture components
         self.reference_network = reference_network
+        self.base_network = reference_network                                   # Artefact from previous implementation --- IGNORE ---
         self.hypernetwork_path = hypernetwork_path
         self.hconfig = hconfig
         self.x_grid = generate_grid(self.L, self.res, self.dim, device=self.device)
