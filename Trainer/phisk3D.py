@@ -18,14 +18,14 @@ from .base import BaseTrainer3D
 
 
 class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
-    def __init__(self, base_network, hypernetwork_path, dataloader, loss_fn, config, hconfig):
+    def __init__(self, reference_network, hypernetwork_path, dataloader, loss_fn, config, hconfig):
         # Architecture components
         self.dim = 3
         self.hidden_dims = config.get('hidden_dims',[128, 256, 512])   
         self.T = config.get('T', None)
         self.num_fourier_features = config.get('num_fourier_features', 64)
-        super().__init__(base_network, dataloader, loss_fn, config)
-        self.base_network = base_network
+        super().__init__(reference_network, dataloader, loss_fn, config)
+        self.reference_network = reference_network
         self.hypernetwork_path = hypernetwork_path
         self.hconfig = hconfig
         self.x_grid = generate_grid(self.L, self.res, self.dim, device=self.device)
@@ -500,11 +500,11 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
 
 
 # Initialization function
-def initialize_phisk_trainer3D(base_network, hypernetwork_path, dataloader, loss_fn, config, hconfig, lora_dir):
+def initialize_phisk_trainer3D(reference_network, hypernetwork_path, dataloader, loss_fn, config, hconfig, lora_dir):
     """
     Initialize the PHISK trainer with LoRA ensemble
     """
-    trainer = PHISK_Trainer3D(base_network, hypernetwork_path, dataloader, loss_fn, config, hconfig)
+    trainer = PHISK_Trainer3D(reference_network, hypernetwork_path, dataloader, loss_fn, config, hconfig)
     
     # Load LoRA ensemble
     if not hconfig['load']:

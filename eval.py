@@ -193,7 +193,7 @@ def evaluate_circle_estimation(model, config, R, display = True):
     x_grid = generate_grid(L, res, 2, device=model.device)
     center = torch.tensor(config['mesh_param']['center'], dtype = torch.double, device = config['device'])
     mask = (x_grid[:,0]-center[0])**2 + (x_grid[:,1]-center[1])**2 > config['mesh_param']['r']**2
-    print('mask shape :' ,mask.shape)
+    # print('mask shape :' ,mask.shape)
     k = 2 * np.pi * config['frequency'] / config['celerity']  # wavenumber
     with torch.no_grad():
         model.eval()

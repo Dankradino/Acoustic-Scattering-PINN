@@ -464,22 +464,22 @@ class PhiskModule:
         coords = coords.clone().detach().requires_grad_(diff)
         
         # Access the network structure
-        if hasattr(self.base_network, 'siren'):
-            if hasattr(self.base_network.siren, 'net'):
-                siren_net = self.base_network.siren.net
+        if hasattr(self.reference_network, 'siren'):
+            if hasattr(self.reference_network.siren, 'net'):
+                siren_net = self.reference_network.siren.net
             else:
-                siren_net = self.base_network.siren
-        elif hasattr(self.base_network, 'net'):
-            siren_net = self.base_network.net
+                siren_net = self.reference_network.siren
+        elif hasattr(self.reference_network, 'net'):
+            siren_net = self.reference_network.net
         else:
-            raise AttributeError("Cannot find network structure in base_network")
+            raise AttributeError("Cannot find network structure in reference_network")
         
         # Get all available LoRA parameter keys
         all_keys = self._get_all_param_keys(lora_params)
         layer_keys = [key for key in all_keys if 'lora_A' in key]
         
-        if hasattr(self.base_network, 'fourier_feature_mapping'):
-            out = self.base_network.fourier_feature_mapping(coords)
+        if hasattr(self.reference_network, 'fourier_feature_mapping'):
+            out = self.reference_network.fourier_feature_mapping(coords)
         else:
             out = coords
         
