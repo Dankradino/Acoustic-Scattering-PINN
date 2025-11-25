@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from .activation import *
 from Trainer.phisk2D import PHISK_Trainer2D
+from Trainer.phisk3D import PHISK_Trainer3D
 
 """
 This module implements a loader for PHISK 
@@ -17,14 +18,24 @@ class DirectionalHyperNetwork(nn.Module):
         super().__init__()
         
         # Initialize the trainer (this contains all the hypernetwork logic)
-        self.trainer = PHISK_Trainer2D(
-            reference_network=reference_network,
-            hypernetwork_path=checkpoint_path,
-            dataloader={},  # Empty for inference
-            loss_fn=nn.MSELoss(),  # Dummy loss
-            config=config,
-            hconfig=hconfig
-        )
+        if config['dim'] == 2:
+            self.trainer = PHISK_Trainer2D(
+                reference_network=reference_network,
+                hypernetwork_path=checkpoint_path,
+                dataloader={},  # Empty for inference
+                loss_fn=nn.MSELoss(),  # Dummy loss
+                config=config,
+                hconfig=hconfig
+            )
+        else:  # 3D case
+            self.trainer = PHISK_Trainer3D(
+                reference_network=reference_network,
+                hypernetwork_path=checkpoint_path,
+                dataloader={},  # Empty for inference
+                loss_fn=nn.MSELoss(),  # Dummy loss
+                config=config,
+                hconfig=hconfig
+            )
 
         # Set to eval mode
         self.trainer.direction_interpolation.eval()
@@ -37,11 +48,11 @@ class DirectionalHyperNetwork(nn.Module):
         Forward pass: model(points, direction) -> predictions
         
         Args:
-            points: [N, 2] tensor of evaluation points
-            direction: [2] tensor or list - target direction
+            points: [N, d] tensor of evaluation points
+            direction: [d] tensor or list - target direction
             
         Returns:
-            [N, 2] tensor of predicted field (real, imaginary)
+            [N, d] tensor of predicted field (real, imaginary)
         """
         # Convert inputs to tensors if needed
         if not isinstance(points, torch.Tensor):
