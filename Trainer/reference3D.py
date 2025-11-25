@@ -308,13 +308,11 @@ class Trainer3D(BaseTrainer3D):
 
         # Real part plot
         im2 = axs[1, 0].imshow(target[...,0] , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1, 0].set_title('True scattered field real part')
         fig.colorbar(im2, ax=axs[1, 0])
 
         # Imaginary part plot
         im3 = axs[1,1].imshow(target[...,1] , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1,1].set_title('True scattered field imag part')
         fig.colorbar(im3, ax=axs[1, 1])
         plt.tight_layout()
@@ -333,45 +331,38 @@ class Trainer3D(BaseTrainer3D):
         image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float() / 255.0 # Add a batch dimension
 
         # Log the image to TensorBoard
-        #self.writer.add_image(f'Scattered_field_pred/{epoch}', image_tensor[0], 0)  # Add the image to TensorBoard
         self.writer.add_image(f'Scattered_field_pred/{epoch}', image_tensor[0], 0)
 
 
         fig, axs = plt.subplots(3, 2, figsize=(12, 5))
         # Real part plot
         im0 = axs[0, 0].imshow(u_rez, extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0, 0].set_title('XY Real part')
         fig.colorbar(im0, ax=axs[0, 0])
 
         # Imaginary part plot
         im1 = axs[0,1].imshow(u_imz, extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0,1].set_title('XY Imag part')
         fig.colorbar(im1, ax=axs[0, 1])
 
         # Real part plot
         im2 = axs[1, 0].imshow(u_rey , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1, 0].set_title('XZ Real part')
         fig.colorbar(im2, ax=axs[1, 0])
 
         # Imaginary part plot
         im3 = axs[1,1].imshow(u_imy , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1,1].set_title('XZ Imag part')
         fig.colorbar(im3, ax=axs[1, 1])
         plt.tight_layout()
 
         # Real part plot
         im4 = axs[2, 0].imshow(u_rex , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[2, 0].set_title('YZ Real part')
         fig.colorbar(im4, ax=axs[2, 0])
 
         # Imaginary part plot
         im5 = axs[2,1].imshow(u_imx , extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1,1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[2,1].set_title('YZ Imag part')
         fig.colorbar(im5, ax=axs[2, 1])
         plt.tight_layout()
@@ -402,13 +393,11 @@ class Trainer3D(BaseTrainer3D):
 
         # Real part plot
         im0 = axs[0].imshow(u_sc, extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0].set_title('Scattered field')
         fig.colorbar(im0, ax=axs[0])
 
         # Imaginary part plot
         im1 = axs[1].imshow(u_full, extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1].set_title('Full field')
         fig.colorbar(im1, ax=axs[1])
 
@@ -441,23 +430,19 @@ class Trainer3D(BaseTrainer3D):
 
         # Real part plot
         im0 = axs[0, 0].imshow(np.log(np.abs(du_real)+1e-10), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0, 0].set_title('Real part of dP_s estimated')
         fig.colorbar(im0, ax=axs[0, 0])
 
         # Imaginary part plot
         im1 = axs[0, 1].imshow(np.log(np.abs(du_imag)+1e-10), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[0, 1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[0, 1].set_title('Imag part of dP_s estimated')
         fig.colorbar(im1, ax=axs[0, 1])
 
         im2 = axs[1, 0].imshow(np.log(np.abs(du_r)+1e-10), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 0].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1, 0].set_title('Real part of  dP_s true')
         fig.colorbar(im2, ax=axs[1, 0])
                      
         im3 = axs[1, 1].imshow(np.log(np.abs(du_i)+1e-10), extent=[-self.L, self.L, -self.L, self.L], origin='lower', cmap='viridis')
-        #axs[1, 1].add_patch(create_obstacle_patch(polygon, shape_type="polygon"))
         axs[1, 1].set_title('Imag part of dP_s true')
         fig.colorbar(im3, ax=axs[1, 1])
         plt.tight_layout()
