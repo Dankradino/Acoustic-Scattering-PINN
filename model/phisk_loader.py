@@ -31,7 +31,7 @@ class DirectionalHyperNetwork(nn.Module):
             self.trainer = PHISK_Trainer3D(
                 reference_network=reference_network,
                 hypernetwork_path=checkpoint_path,
-                dataloader={},  # Empty for inference
+                dataloader={'R' : config['mesh_param']['r']},  # For inference only
                 loss_fn=nn.MSELoss(),  # Dummy loss
                 config=config,
                 hconfig=hconfig
