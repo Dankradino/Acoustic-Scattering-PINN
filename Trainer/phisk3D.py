@@ -22,7 +22,7 @@ class PHISK_Trainer3D(BaseTrainer3D, PhiskModule):
         # Architecture components
         self.dim = 3
         self.hidden_dims = hconfig.get('hidden_dims',[128, 256, 512])   
-        self.T = config.get('T', None)
+        self.T = hconfig.get('T', None)
         self.num_fourier_features = config.get('num_fourier_features', 64)
         super().__init__(reference_network, dataloader, loss_fn, config)
         self.reference_network = reference_network

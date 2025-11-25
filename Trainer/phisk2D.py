@@ -23,8 +23,8 @@ import re
 class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
     def __init__(self, reference_network, hypernetwork_path, dataloader, loss_fn, config, hconfig):
         self.dim = 2
-        self.hidden_dims = config.get('hidden_dims',[128, 256, 512])  
-        self.T = config.get('T', None)
+        self.hidden_dims = hconfig.get('hidden_dims',[128, 256, 512])  
+        self.T = hconfig.get('T', None)
     
         super().__init__(reference_network, dataloader, loss_fn, config)
         # Architecture components
