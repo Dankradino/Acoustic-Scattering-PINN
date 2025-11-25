@@ -18,7 +18,7 @@ class DirectionalHyperNetwork(nn.Module):
         super().__init__()
         
         # Initialize the trainer (this contains all the hypernetwork logic)
-        if config['dim'] == 2:
+        if config['input_dim'] == 2:
             self.trainer = PHISK_Trainer2D(
                 reference_network=reference_network,
                 hypernetwork_path=checkpoint_path,

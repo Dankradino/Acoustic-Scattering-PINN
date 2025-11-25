@@ -426,7 +426,6 @@ def load_config(config_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     direction = torch.tensor(config['ref_direction'], device = device).unsqueeze(1)
-    config['dim'] = direction.shape[0]
     direction =  direction / torch.linalg.norm(direction)
     config['direction'] = direction
     config['device'] = device
