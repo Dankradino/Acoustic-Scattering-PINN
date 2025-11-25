@@ -264,8 +264,8 @@ class Trainer3D(BaseTrainer3D):
         u_full[self.dataloader['mesh_mask']] = 0.
         u_full = u_full[format]
         target = np.zeros((self.res,self.res,2))
-        target[...,0] = u_full#self.reshape_solution[format + (0,)] 
-        target[...,1] = u_full#self.reshape_solution[format + (1,)] 
+        target[...,0] = self.reshape_solution[format + (0,)] 
+        target[...,1] = self.reshape_solution[format + (1,)] 
         du_r = (target[1:,:,0]-target[:-1,:,0])/self.res
         du_i = (target[1:,:,1]-target[:-1,:,1])/self.res
 

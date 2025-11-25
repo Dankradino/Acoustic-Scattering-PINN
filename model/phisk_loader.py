@@ -16,7 +16,7 @@ class DirectionalHyperNetwork(nn.Module):
     """
     def __init__(self, reference_network, checkpoint_path, config, hconfig):
         super().__init__()
-        
+        self.hidden_dims = hconfig['hidden_dims']
         # Initialize the trainer (this contains all the hypernetwork logic)
         if config['input_dim'] == 2:
             self.trainer = PHISK_Trainer2D(

@@ -560,10 +560,9 @@ class PhiskModule:
         print(checkpoint.keys())  # to see all keys, including your RFF matrices
         
         # Extract saved data
-        
         interpolation_state = checkpoint['interpolation_state']
         #T = checkpoint.get('interpolation_state', None)
-        #print(T)
+ 
         hypernetwork_state = checkpoint['hypernetwork_state']
         self.lora_directions = checkpoint['lora_directions'].to(self.device)
         #print(self.lora_directions)
