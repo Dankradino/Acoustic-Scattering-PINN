@@ -67,7 +67,7 @@ def main():
     parser = argparse.ArgumentParser(description='Train a model and log to TensorBoard')
     parser.add_argument('--model', type=str, required=True, help='The model name or type to use (e.g., "xxx")')
     parser.add_argument('--J', type=int, default=6, help='Number of LoRA adapted directions')
-    parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save file for weights')
+    parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/reference/', help='Save file for weights')
     parser.add_argument('--lora_dir', type=str, default='checkpoints/3D/lora/', help='Directory containing LoRA weights')
     parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/3D/phisk/', help='Save directory for PHISK weights')
     parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular circle defined by mesh_param')

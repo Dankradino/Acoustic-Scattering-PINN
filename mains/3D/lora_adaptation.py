@@ -68,7 +68,7 @@ def main():
     parser.add_argument('--model', type=str, required=True, help='The model name to use (e.g., "xxx")')
     parser.add_argument('--retrain', type=bool, default=False, help='True if no pretrained model')
     parser.add_argument('--J', type=int, default=6, help='Number of LoRA adapted directions')
-    parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/scattering/', help='Save directory for reference weights')
+    parser.add_argument('--save_dir', type=str, default = 'checkpoints/3D/reference/', help='Save directory for reference weights')
     parser.add_argument('--lora_dir', type=str, default = 'checkpoints/3D/lora/', help='Save directory for LoRA weights')
     parser.add_argument('--mesh_path', type=str, default=None, help='File containing a custom shape, if None, train on a regular circle defined by mesh_param')
     args = parser.parse_args()
