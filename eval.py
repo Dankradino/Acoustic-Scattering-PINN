@@ -457,9 +457,9 @@ def evaluate_energy_spectrum(model, config, R):
     plt.show()
 
 
-########################################################
+##########################################################
 # 3D evaluation of the scattering estimation for a sphere
-########################################################
+##########################################################
 
 def evaluate_sphere_estimation(model, trainer, config, R, display = False):
     L = config['L']
@@ -526,7 +526,7 @@ def evaluate_sphere_estimation(model, trainer, config, R, display = False):
 
 
 class AcousticScattering3D:
-    def __init__(self, ka_max=20, n_terms=50, incident_direction=None, sphere_radius=1.0, device='cpu'):
+    def __init__(self, ka_max=20, n_terms=50, incident_direction=None, sphere_radius=1.0, device='cpu', verbose = True):
         """
         Acoustic scattering by a sound-hard sphere with PyTorch grid support
         
@@ -541,7 +541,7 @@ class AcousticScattering3D:
         self.n_terms = n_terms
         self.sphere_radius = sphere_radius
         self.device = device
-        
+        self.verbose = verbose
         # Set incident direction
         if incident_direction is None:
             self.incident_direction = np.array([0, 0, 1])  # Default: +z direction
@@ -553,8 +553,8 @@ class AcousticScattering3D:
         self.incident_theta = np.arccos(np.clip(self.incident_direction[2], -1, 1))
         self.incident_phi = np.arctan2(self.incident_direction[1], self.incident_direction[0])
         
-        print(f"Incident direction: {self.incident_direction}")
-        #print(f"Incident theta: {self.incident_theta:.3f}, phi: {self.incident_phi:.3f}")
+        if self.verbose: 
+            print(f"Incident direction: {self.incident_direction}")
     
     def spherical_hankel1(self, n, x):
         """Spherical Hankel function of first kind"""
@@ -694,21 +694,25 @@ class AcousticScattering3D:
         grid: PyTorch tensor of shape (res^3, 3) with coordinates
         """
         # Generate grid using your function (assuming it exists)
-        print(f"Generating 3D grid: L={L}, res={res}")
+        if self.verbose:
+            print(f"Generating 3D grid: L={L}, res={res}")
         # For demonstration, create a simple grid
         grid = generate_grid(L, res, 3)
-        
-        print(f"Grid shape: {grid.shape}")
-        print(f"Grid range: x∈[{grid[:, 0].min():.2f}, {grid[:, 0].max():.2f}]")
+
+        if self.verbose:
+            print(f"Grid shape: {grid.shape}")
+            print(f"Grid range: x∈[{grid[:, 0].min():.2f}, {grid[:, 0].max():.2f}]")
         
         k = ka / self.sphere_radius
         
         # Calculate incident field
-        print("Calculating incident field...")
-        U_inc = self.incident_field_pytorch(grid, k, amplitude)
+        if self.verbose:
+            print("Calculating incident field...")
+        # U_inc = self.incident_field_pytorch(grid, k, amplitude)    # If you want to compare full fields instead of just scattered one
         
         # Calculate scattered field
-        print("Calculating scattered field...")
+        if self.verbose:
+            print("Calculating scattered field...")
         U_scat = self.scattered_field_pytorch(grid, ka, amplitude)
         
         # Total field
@@ -722,9 +726,9 @@ class AcousticScattering3D:
         # Convert mask to torch and apply
         inside_mask_torch = torch.from_numpy(inside_mask).to(self.device)
         U[inside_mask_torch] = 0
-        
-        print(f"Field calculated! Shape: {U.shape}")
-        print(f"Field range: {torch.abs(U).min():.3f} to {torch.abs(U).max():.3f}")
+        if self.verbose:
+            print(f"Field calculated! Shape: {U.shape}")
+            print(f"Field range: {torch.abs(U).min():.3f} to {torch.abs(U).max():.3f}")
         
         return U, grid
     
