@@ -197,6 +197,10 @@ def create_2d_shape_mask(config, boundary_points):
     # Flatten coordinates for batch processing
     points = np.stack([X.flatten(), Y.flatten()], axis=1)
     
+    # Check if boundary_points is a torch.Tensor and convert if needed
+    if isinstance(boundary_points, torch.Tensor):
+        boundary_points = boundary_points.detach().cpu().numpy()
+
     # Create path from boundary points and check containment
     path = Path(boundary_points)
     inside_mask = path.contains_points(points)
