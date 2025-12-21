@@ -742,3 +742,32 @@ def load_pinn_rff_lora_checkpoint(model: 'PINN_rff_LoRA',
         print(f"  - {name}: {lora_weights[name].shape}")
     
     return model
+
+def save_lora_weights(model, path):
+    '''
+    Save only LoRA weights from a reference training.
+    '''
+    lora_state = {}
+
+    for name, module in model.named_modules():
+        if isinstance(module, LoRALinear) and module.r > 0:
+            lora_state[name] = {
+                'lora_A': module.lora_A.detach().cpu(),
+                'lora_B': module.lora_B.detach().cpu(),
+                'alpha': module.alpha,
+            }
+
+    torch.save(lora_state, path)
+
+def load_lora_weights(model, path):
+    '''
+    Load only LoRA weights.
+    '''
+    lora_state = torch.load(path)
+
+    for name, module in model.named_modules():
+        if name in lora_state:
+            state = lora_state[name]
+            module.lora_A.data.copy_(state['lora_A'])
+            module.lora_B.data.copy_(state['lora_B'])
+            module.alpha = state['alpha']

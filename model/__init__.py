@@ -5,10 +5,10 @@ from .base import PINN
 from .siren import SirenPINN, SirenDouble, SirenMagPhase, SirenConditioned
 from .rff import PINN_RFF, RBFPinn, PINN_directional_RFF, Polar_RFF
 from .activation import *
-from .phisk_module import DirectionInterpolationModule, ContinuousDirectionHyperNetworkCorrector, PhiskModule
-from .phisk_loader import load_directional_model
 from .lora import init_with_Lora, init_with_Lora_rff
-from .lora_interp_loader import load_interpolated_model
+from .phisk_module import DirectionInterpolationModule, ContinuousDirectionHyperNetworkCorrector, PhiskModule
+# from .phisk_loader import load_directional_model
+# from .lora_interp_loader import load_interpolated_model
 _all__ = ["rff", "siren", "mag_phase", "rff_polar", "re_im"]
 
 
