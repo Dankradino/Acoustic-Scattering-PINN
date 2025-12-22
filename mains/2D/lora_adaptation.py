@@ -46,7 +46,7 @@ def train_direction(i, direction, config, model_name, dataloader, loss_fn, mesh_
         model.eval()
         if config['shape']== 'circle':
             print(f'LoRA model performance : {direction}')
-            evaluate_circle_estimation(model, conf_copy, mesh_param['R'], display = False)
+            evaluate_circle_estimation(model, conf_copy, mesh_param['r'], display = False)
 
 
 def main():
@@ -55,7 +55,7 @@ def main():
     parser.add_argument('--model', type=str, required=True, help='The model nameto use (e.g., "xxx")')
     parser.add_argument('--retrain', type=bool, default=False, help='True if no pretrained model')
     parser.add_argument('--J', type=int, default=4, help='Number of LoRA adapted directions')
-    parser.add_argument('--save_dir', type=str, default = 'checkpoints/2D/scattering/', help='Save directory for reference weights')
+    parser.add_argument('--save_dir', type=str, default = 'checkpoints/2D/reference/', help='Directory for reference weights')
     parser.add_argument('--lora_dir', type=str, default = 'checkpoints/2D/lora/', help='Save directory for LoRA weights')
     args = parser.parse_args()
     model_name = args.model

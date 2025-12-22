@@ -258,14 +258,12 @@ class Trainer3D(BaseTrainer3D):
         u_real = u_real[format]
         u_imag = u_imag[format]
         u_sc = np.sqrt(u_real**2+u_imag**2)
-        # print("u shape:", u.shape)
-        # print("u_inc shape:", u_inc.shape)
         u_full = np.linalg.norm(u + u_inc, axis = 1).reshape(self.res, self.res, self.res)
         u_full[self.dataloader['mesh_mask']] = 0.
         u_full = u_full[format]
         target = np.zeros((self.res,self.res,2))
-        target[...,0] = self.reshape_solution[format + (0,)] 
-        target[...,1] = self.reshape_solution[format + (1,)] 
+        target[...,0] = self.solution.reshape(self.res, self.res, self.res,2)[format + (0,)] 
+        target[...,1] = self.solution.reshape(self.res, self.res, self.res,2)[format + (1,)] 
         du_r = (target[1:,:,0]-target[:-1,:,0])/self.res
         du_i = (target[1:,:,1]-target[:-1,:,1])/self.res
 

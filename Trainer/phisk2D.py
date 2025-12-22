@@ -249,7 +249,7 @@ class PHISK_Trainer2D(BaseTrainer2D, PhiskModule):
         polygon = self.dataloader['polygon'][:, ::-1]
 
         self.config['direction'] = direction
-        R = self.config['R']
+        R = self.config['mesh_param']['r']
         mask = self.x_grid[:,0]**2 + self.x_grid[:,1]**2 > R**2
 
         tar = torch.zeros((self.res**2,2), device = self.device, dtype = torch.double)

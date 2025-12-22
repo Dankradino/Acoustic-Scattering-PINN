@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 from utils import load_config, create_2d_shape_mask
-from model import init_model_from_conf, load_directional_model
+from model import init_model_from_conf
+from model.phisk_loader import load_directional_model
 from shape import generate_square, generate_star, generate_ellipse, generate_circle, densify_polygon_with_normals
 from Trainer.phisk2D import initialize_phisk_trainer2D
 from Dataloader import create_dataloader
@@ -17,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description='Train a PHISK model (LoRA adaptation beforehand required)')
     parser.add_argument('--model', type=str, required=True, help='The model name to use (e.g., "xxx")')
     parser.add_argument('--preload', type=bool, default=False, help='True if pretrained phisk model')
-    parser.add_argument('--save_dir', type=str, default = 'checkpoints/2D/scattering/', help='Save directory for reference weights')
+    parser.add_argument('--save_dir', type=str, default = 'checkpoints/2D/reference/', help='Save directory for reference weights')
     parser.add_argument('--hsave_dir', type=str, default = 'checkpoints/2D/phisk/', help='Save directory for PHISK weights')
     parser.add_argument('--lora_dir', type=str, default='checkpoints/2D/lora/', help='Directory containing LoRA weights')
     args = parser.parse_args()
@@ -25,7 +26,7 @@ def main():
     preload = args.preload
     save_dir = args.save_dir
     hsave_dir = args.hsave_dir
-    lora_dir = args.save_dir
+    lora_dir = args.lora_dir
     
     torch.manual_seed(30)
 
@@ -36,7 +37,7 @@ def main():
     config, DTYPE = load_config(config_path)
     config['model'] = model_name
 
-    with open(f"config/scattering/hconfig.yaml") as file:
+    with open(f"config/2D/scattering/hconfig.yaml") as file:
         hconfig = yaml.safe_load(file)
     
     # Scatterer shape definition
@@ -97,7 +98,7 @@ def main():
         hconfig['load'] = True #True if we load an old PHISK.
         trainer = initialize_phisk_trainer2D(
             reference_network=reference_model,
-            hypernetwork=f'{hsave_dir}{model_name}.pth',  # We're using a trained (at least partially) PHISK.
+            hypernetwork_path=f'{hsave_dir}{model_name}.pth',  # We're using a trained (at least partially) PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,
             config=config,
@@ -108,7 +109,7 @@ def main():
         hconfig['load'] = False
         trainer = initialize_phisk_trainer2D(
             reference_network=reference_model,
-            hypernetwork=None,  # We're not using an old PHISK.
+            hypernetwork_path=None,  # We're not using an old PHISK.
             dataloader=dataloader,
             loss_fn=loss_fn,
             config=config,
@@ -123,7 +124,6 @@ def main():
     #Loading PHISK
     phisk = load_directional_model(
     reference_network=reference_model,
-    lora_dir=lora_dir, 
     checkpoint_path=f'{hsave_dir}{model_name}.pth',
     config=config,
     hconfig=hconfig
