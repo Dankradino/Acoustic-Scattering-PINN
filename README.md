@@ -85,7 +85,7 @@ Training scripts for all PHISK components are located in `/mains/`.
 After configuring your shape and parameters:
 
 ```bash
-python mains/3D/phisk_training_from_scratch.py
+python -m mains.3D.phisk_training_from_scratch
 ```
 
 ### HRTF-Specific Training
@@ -93,7 +93,7 @@ python mains/3D/phisk_training_from_scratch.py
 A specialized training pipeline for the SONICOM dataset is available:
 
 ```bash
-python mains/hrtf/hrtf_training.py
+python -m mains.hrtf.hrtf_training.py
 ```
 
 
