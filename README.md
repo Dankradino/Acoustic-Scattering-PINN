@@ -155,7 +155,7 @@ of the Audio Engineering Society, 71:241–253, 2023.
 
 ## Coming Soon
 
-- Interactive Jupyter notebooks demonstrating model loading and testing.
+- Interactive Jupyter notebooks demonstrating HRTF loading and testing.
 - Correct HRTF checkpoints format.
 
 ## Contact
