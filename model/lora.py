@@ -455,7 +455,6 @@ class PINN_rff_LoRA(nn.Module):
                 else:
                     activation = LoRAActivationWrapper(copy.deepcopy(custom_activation))
         else:
-            print('Not good bro')
             activation = LoRAActivationWrapper(nn.Tanh())
         
         layers.append(activation)
