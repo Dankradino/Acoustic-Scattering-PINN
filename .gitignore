@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Weight
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
