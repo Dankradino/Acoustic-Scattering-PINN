@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from utils import load_config, create_2d_shape_mask
-from model import init_model_from_conf, init_with_Lora, init_with_Lora_rff
+from model import init_model_from_conf, create_lora_model_with_optimizer
 from shape import generate_star, generate_square, generate_circle, generate_ellipse, densify_polygon_with_normals
 from Trainer import Trainer2D
 from Dataloader import create_dataloader
@@ -32,10 +32,7 @@ def train_direction(i, direction, config, model_name, dataloader, loss_fn, mesh_
         reference_model.load_state_dict(torch.load(f'{save_dir}{model_name}.pth'))
 
         #Initialize adapted network    
-        if model_name == 'rff':
-            model, optimizer = init_with_Lora_rff(reference_model, conf_copy['lora'], r=12, alpha=1.0, custom_activation=model[1])
-        else:  
-            model, optimizer = init_with_Lora(reference_model, conf_copy['lora'], r=12)
+        model, optimizer = create_lora_model_with_optimizer(reference_model, conf_copy['lora'], r=12, alpha=1.0)
         conf_copy['lora']['optimizer'] = optimizer
 
         #Train LoRA adapted network
