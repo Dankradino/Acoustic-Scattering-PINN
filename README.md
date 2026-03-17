@@ -163,6 +163,20 @@ of the Audio Engineering Society, 71:241–253, 2023.
 For questions or issues, please contact:
 - Email: tancrede.martinez@telecom-paris.fr
 
+## Citation 
+
+If you use this work, please consider citing the following paper:
+
+```bibtex
+@inproceedings{martinez2026neural_scattering_hrtf,
+  author = {Martinez, Tancrède and Di Carlo, Diego and Nugraha, Aditya Arie and Fontaine, Mathieu and Yoshii, Kazuyoshi},
+  title = {Physics-Informed Learning of Neural Scattering Fields Towards Measurement-Free Mesh-to-HRTF Estimation},
+  booktitle = {Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year = {2026},
+  address = {Barcelona, Spain},
+  publisher = {IEEE Signal Processing Society}
+}
+
 ## Licence
 
 MIT License
