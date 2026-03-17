@@ -176,6 +176,7 @@ If you use this work, please consider citing the following paper:
   address = {Barcelona, Spain},
   publisher = {IEEE Signal Processing Society}
 }
+```
 
 ## Licence
 
