@@ -19,26 +19,14 @@ def load_hrtf(sofa_path, vertices, DTYPE, device):
     fs = sofa_file.getSamplingRate()       
     M, R, N = hrir_values.shape 
 
-    # Define custom axis using two ears positions in relative positions
+    # Find the mesh vertex closest to each ear mic position independently
     p1 = mic_positions[0]  # [x1, y1, z1]
     p2 = mic_positions[1]  # [x2, y2, z2]
 
-    # Direction of the axis
-    axis_dir = p2 - p1
-    axis_dir = axis_dir / np.linalg.norm(axis_dir)  # Unit vector
+    idx1 = np.argmin(np.linalg.norm(vertices - p1, axis=1))
+    idx2 = np.argmin(np.linalg.norm(vertices - p2, axis=1))
 
-    # Vectors from p1 to all mesh vertices
-    v_to_p1 = vertices - p1
-
-    # Project each vertex onto the axis to find closest point on the line
-    proj_lengths = np.dot(v_to_p1, axis_dir)  # (N,)
-    proj_points = p1 + np.outer(proj_lengths, axis_dir)  # (N, 3)
-
-    # Compute distance from vertex to axis line
-    distances = np.linalg.norm(vertices - proj_points, axis=1)
-
-    # Get indices of two closest
-    closest_indices = np.argsort(distances)[:2]
+    closest_indices = np.array([idx1, idx2])
     closest_vertices = vertices[closest_indices]    #EAR ARE SUPPOSED TO BE ALIGNED ON Y AXIS
 
     print("Vertices corresponding to ears:")

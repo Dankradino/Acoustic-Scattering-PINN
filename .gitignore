@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+test_last_layer_lora.py
+test_sh_lora.py
+checkpoints/2D/
