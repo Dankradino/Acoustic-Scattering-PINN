@@ -438,3 +438,29 @@ def load_config(config_path):
     #config['mode'] = 'source' but need to configurate config['source'] corresponding to source coordinate
 
     return config, DTYPE
+
+
+def load_hrtf_config(config_path):
+    DTYPE = torch.float # Hard-coded
+
+    with open(config_path) as file:
+        config = yaml.load(file, Loader=yaml.UnsafeLoader)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    if isinstance(config.get('direction'), torch.Tensor):
+        config['direction'] = config['direction'].to(device)
+    elif 'direction' in config:
+        direction = torch.tensor(config['direction'], device=device).unsqueeze(1)
+        config['direction'] = direction / torch.linalg.norm(direction)
+
+    if isinstance(config.get('frequency'), torch.Tensor):
+        config['frequency'] = config['frequency'].to(device)
+
+    if isinstance(config.get('source'), torch.Tensor):
+        config['source'] = config['source'].to(device)
+
+    config['device'] = device
+    config['DTYPE'] = DTYPE
+
+    return config, DTYPE
